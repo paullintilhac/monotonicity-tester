@@ -4,7 +4,7 @@ import argparse
 import xgboost as xgb
 from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn import datasets
-
+import random
 from logging import getLogger, basicConfig, INFO
 
 import numpy as np
@@ -70,6 +70,11 @@ def eval(y, y_p):
         return acc, fpr
     except ValueError:
         return accuracy_score(y, y_p), None
+def mutate(x,y):
+    inds = np.where(x==1-y)
+    newInd = random.choice(inds)
+    x[newInd]=1-x[newInd]
+    return x
 
 def main(args):
     print('Loading training datasets...')
@@ -91,10 +96,10 @@ def main(args):
                                        query_id=False)
     x_test = x_test.toarray()
 
+    
 
     dtrain = xgb.DMatrix(x_train, label=y_train)
     dtest = xgb.DMatrix(x_test, label=y_test)
-
     # specify parameters via map
     #param = {'max_depth':4, 'objective':'binary:logistic', 'eta':1}
     param = {'max_depth':2, 'objective':'binary:logistic', 'eta':1}
@@ -110,17 +115,27 @@ def main(args):
     model_with_constraints = xgb.train(params_constrained, dtrain,
                                    num_boost_round = args.num_trees, evals = evallist)
     #early_stopping_rounds = 10)
-
+    print("x_test[0]: "+ str(x_test[0]) + "len(x_test): " + str(len(x_test[0])))
     # make prediction
     y_true = [1 for i in range(3448)] + [0 for i in range(2698)]
     preds = model_with_constraints.predict(dtest)
+    x_mutated = []
+    for i in range(len(x_test)):
+        x_mutated.append(mutate(x_test[i],preds[i]))
+    dmutated = xgb.DMatrix(x_mutated,label=y_test)
+    mutated_preds = model_with_constraints.predict(dmutated)
+
     print(preds[2372])
     y_pred = [1 if p > 0.5 else 0 for p in preds]
+    y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
     print(len(y_true), len(y_pred))
     #print y_pred
     test_acc, test_fpr = eval(y_true, y_pred)
     print('test accuracy: ', test_acc)
     print('test FPR: ', test_fpr)
+    test_acc_mutated, test_fpr_mutated = eval(y_true, y_mutated)
+    print('mutated test accuracy: ', test_acc)
+    print('mutated test FPR: ', test_fpr)
     model_with_constraints.save_model("../models/monotonic/%s.bin" % args.model_name)
     model_with_constraints.dump_model('../models/monotonic/%s.dumped.trees' % args.model_name)
 

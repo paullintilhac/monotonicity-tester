@@ -76,7 +76,7 @@ def train(model):
     optimizer_op = tf.train.AdamOptimizer(learning_rate=\
                             learning_rate).minimize(loss)
 
-    print 'Loading regular training datasets...'
+    print('Loading regular training datasets...')
     train_data = '../data/traintest_all_500test/train_data.libsvm'
     x_train, y_train = datasets.load_svmlight_file(train_data,
                                        n_features=3514,
@@ -86,10 +86,10 @@ def train(model):
 
     x_train = x_train.toarray()
 
-    print 'Shuffle the training datasets...'
+    print('Shuffle the training datasets...')
     x_train, y_train = shuffle_data(x_train, y_train)
 
-    print 'Loading regular testing datasets...'
+    print('Loading regular testing datasets...')
     test_data = '../data/traintest_all_500test/test_data.libsvm'
     x_test, y_test = datasets.load_svmlight_file(test_data,
                                        n_features=3514,
@@ -106,9 +106,9 @@ def train(model):
 
         if(args.resume):
             saver.restore(sess, PATH)
-            print "load model from:", PATH
+            print("load model from:", PATH)
         else:
-            print "initial model as:", PATH
+            print("initial model as:", PATH)
 
         j = 0
         epoch = 0
@@ -131,20 +131,20 @@ def train(model):
 
                 if(epoch != 0 and epoch%10==0):
                     lr*=args.lrdecay
-                    print "epoch:", epoch, " loss:",l, "train acc:", acc, "train fpr:", fpr, "epoch time:", time.time()-start_time
+                    print("epoch:", epoch, " loss:",l, "train acc:", acc, "train fpr:", fpr, "epoch time:", time.time()-start_time)
 
                 if(epoch != 0 and epoch%20==0):
                     test_acc, test_fpr = eval(x_test, y_test, sess, model)
-                    print "epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr
+                    print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
         epoch = batch_num * batch_size / x_train.shape[0]
-        print "epoch:", epoch, " loss:",l, "train acc:", acc, "epoch time:", time.time()-start_time
+        print("epoch:", epoch, " loss:",l, "train acc:", acc, "epoch time:", time.time()-start_time)
 
         test_acc, test_fpr = eval(x_test, y_test, sess, model)
-        print "epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr
+        print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
         saver.save(sess, save_path=PATH)
-        print "Model saved to", PATH
+        print("Model saved to", PATH)
 
 def shuffle_data(x, y):
     idx = np.arange(0 , len(x))
@@ -166,7 +166,7 @@ def new_baseline_adv_train(model, train_interval_path, test_interval_path, model
     regular_loss = model.xent
     optimizer_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(regular_loss)
 
-    print 'Loading regular training datasets...'
+    print('Loading regular training datasets...')
     train_data = '../data/traintest_all_500test/train_data.libsvm'
     x_train, y_train = datasets.load_svmlight_file(train_data,
                                        n_features=3514,
@@ -175,9 +175,9 @@ def new_baseline_adv_train(model, train_interval_path, test_interval_path, model
                                        query_id=False)
     x_train = x_train.toarray()
 
-    print 'x_train.shape:', x_train.shape
+    print('x_train.shape:', x_train.shape)
 
-    print 'Loading regular testing datasets...'
+    print('Loading regular testing datasets...')
     test_data = '../data/traintest_all_500test/test_data.libsvm'
     x_test, y_test = datasets.load_svmlight_file(test_data,
                                        n_features=3514,
@@ -186,22 +186,22 @@ def new_baseline_adv_train(model, train_interval_path, test_interval_path, model
                                        query_id=False)
     x_test = x_test.toarray()
 
-    print 'x_test.shape:', x_test.shape
+    print('x_test.shape:', x_test.shape)
 
     # load the interval bound datasets. they will be used for adversarial retraining.
-    print 'Loading the training interval datasets...'
+    print('Loading the training interval datasets...')
     y_input = pickle.load(open(os.path.join(train_interval_path, 'y_input.pickle'), 'rb'))
     vectors_all = pickle.load(open(os.path.join(train_interval_path, 'vectors_all.pickle'), "rb"))
 
-    print 'vectors_all.shape:', vectors_all.shape
+    print('vectors_all.shape:', vectors_all.shape)
 
     # Load the test data
-    print 'Loading the testing interval datasets...'
+    print('Loading the testing interval datasets...')
     y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'))
     splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'))
     vectors_all_test = pickle.load(open(os.path.join(test_interval_path, 'vectors_all.pickle'), "rb"))
 
-    print 'vectors_all_test.shape:', vectors_all_test.shape
+    print('vectors_all_test.shape:', vectors_all_test.shape)
 
     saver = tf.train.Saver()
 
@@ -211,21 +211,21 @@ def new_baseline_adv_train(model, train_interval_path, test_interval_path, model
 
         if(args.resume):
             saver.restore(sess, PATH)
-            print "load model from:", PATH
+            print("load model from:", PATH)
         else:
-            print "initial model as:", PATH
+            print("initial model as:", PATH)
 
         j = 0
         i = 0
         epoch = 0
-        print 'Concatenate the training datasets...'
+        print('Concatenate the training datasets...')
         all_x_train = np.concatenate((x_train, vectors_all))
         all_y_train = np.concatenate((y_train, y_input))
 
-        print 'all_x_train.shape:', all_x_train.shape
-        print 'all_y_train.shape:', all_y_train.shape
+        print('all_x_train.shape:', all_x_train.shape)
+        print('all_y_train.shape:', all_y_train.shape)
 
-        print 'Shuffle the training datasets...'
+        print('Shuffle the training datasets...')
         all_x_train, all_y_train = shuffle_data(all_x_train, all_y_train)
 
         for cur_batch in range(batch_num):
@@ -247,24 +247,24 @@ def new_baseline_adv_train(model, train_interval_path, test_interval_path, model
                         learning_rate:lr}
                                 )
                 epoch += 1
-                print 'Finished epoch %d...' % epoch
-                print 'Shuffle the training datasets...'
+                print('Finished epoch %d...' % epoch)
+                print('Shuffle the training datasets...')
                 all_x_train, all_y_train = shuffle_data(all_x_train, all_y_train)
                 j = 0
             else:
                 j += batch_size
             if cur_batch != 0 and cur_batch % args.verbose ==0:
                 lr*=args.lrdecay
-                print "batch_num:", cur_batch, "regular loss:", reg_l, "regular train acc:", reg_acc , "epoch time:", time.time()-start_time
+                print("batch_num:", cur_batch, "regular loss:", reg_l, "regular train acc:", reg_acc , "epoch time:", time.time()-start_time)
                 acc, fpr = eval(x_test, y_test, sess, model)
-                print "*** test acc:", acc, "test fpr:, ", fpr
+                print("*** test acc:", acc, "test fpr:, ", fpr)
 
-        print '======= DONE ======='
+        print('======= DONE =======')
         acc, fpr = eval(x_test, y_test, sess, model)
-        print "======= test acc:", acc, "test fpr:", fpr
+        print("======= test acc:", acc, "test fpr:", fpr)
 
         saver.save(sess, save_path=PATH)
-        print "Model saved to", PATH
+        print("Model saved to", PATH)
 
 
 

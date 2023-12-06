@@ -8,7 +8,6 @@ from sklearn import datasets
 from sklearn.metrics import confusion_matrix, accuracy_score
 import tensorflow as tf
 from model import Model
-import pdfrw
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
@@ -76,7 +75,7 @@ def train(model):
     optimizer_op = tf.train.AdamOptimizer(learning_rate=\
                             learning_rate).minimize(loss)
 
-    print 'Loading regular training datasets...'
+    print('Loading regular training datasets...')
     train_data = '../data/traintest_all_500test/train_data.libsvm'
     x_train, y_train = datasets.load_svmlight_file(train_data,
                                        n_features=3514,
@@ -86,10 +85,10 @@ def train(model):
 
     x_train = x_train.toarray()
 
-    print 'Shuffle the training datasets...'
+    print('Shuffle the training datasets...')
     x_train, y_train = shuffle_data(x_train, y_train)
 
-    print 'Loading regular testing datasets...'
+    print('Loading regular testing datasets...')
     test_data = '../data/traintest_all_500test/test_data.libsvm'
     x_test, y_test = datasets.load_svmlight_file(test_data,
                                        n_features=3514,
@@ -106,9 +105,9 @@ def train(model):
 
         if(args.resume):
             saver.restore(sess, PATH)
-            print "load model from:", PATH
+            print("load model from:", PATH)
         else:
-            print "initial model as:", PATH
+            print("initial model as:", PATH)
 
         j = 0
         epoch = 0
@@ -130,25 +129,25 @@ def train(model):
                 # number of batches = epoch * (total_dataset_size / batch_sizie
                 if(epoch != 0 and epoch%10==0):
                     lr*=args.lrdecay
-                    print "epoch:", epoch, " loss:",l, "train acc:", acc, "train fpr:", fpr, "epoch time:", time.time()-start_time
+                    print("epoch:", epoch, " loss:",l, "train acc:", acc, "train fpr:", fpr, "epoch time:", time.time()-start_time)
 
                 if(epoch != 0 and epoch%20==0):
                     test_acc, test_fpr = eval(x_test, y_test, sess, model)
-                    print "epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr
+                    print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
         epoch = batch_num * batch_size / x_train.shape[0]
-        print "epoch:", epoch, " loss:",l, "train acc:", acc, "epoch time:", time.time()-start_time
+        print("epoch:", epoch, " loss:",l, "train acc:", acc, "epoch time:", time.time()-start_time)
 
         test_acc, test_fpr = eval(x_test, y_test, sess, model)
-        print "epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr
+        print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
         saver.save(sess, save_path=PATH)
-        print "Model saved to", PATH
+        print("Model saved to", PATH)
 
 def eval_vra(batch_size, batch_num, x_input, y_input, vectors_all, splits, sess, model):
     start = 0
     end = 0
-    print 'Starting prediction to test VRA...'
+    print('Starting prediction to test VRA...')
     y = y_input.tolist()
     y_input_hat = []
     y_input_ipred = []
@@ -186,10 +185,10 @@ def eval_vra(batch_size, batch_num, x_input, y_input, vectors_all, splits, sess,
     if y[j:] == y_input_ipred[j:]:
         ver_correct += 1
     total += 1
-    print total
+    print(total)
     final_acc = acc_correct/float(total)
     final_ver_acc = ver_correct/float(total)
-    print '======= acc:', final_acc, "ver_acc:", final_ver_acc
+    print('======= acc:', final_acc, "ver_acc:", final_ver_acc)
 
 
 def shuffle_data(x, y):
@@ -221,7 +220,7 @@ def adv_train(model, train_interval_path, test_interval_path, model_name):
     # try combined loss
     optimizer_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss = regular_loss + interval_loss)
 
-    print 'Loading regular training datasets...'
+    print('Loading regular training datasets...')
     train_data = '../data/traintest_all_500test/train_data.libsvm'
     x_train, y_train = datasets.load_svmlight_file(train_data,
                                        n_features=3514,
@@ -230,10 +229,10 @@ def adv_train(model, train_interval_path, test_interval_path, model_name):
                                        query_id=False)
     x_train = x_train.toarray()
 
-    print 'Shuffle the training datasets...'
+    print('Shuffle the training datasets...')
     x_train, y_train = shuffle_data(x_train, y_train)
 
-    print 'Loading regular testing datasets...'
+    print('Loading regular testing datasets...')
     test_data = '../data/traintest_all_500test/test_data.libsvm'
     x_test, y_test = datasets.load_svmlight_file(test_data,
                                        n_features=3514,
@@ -244,14 +243,14 @@ def adv_train(model, train_interval_path, test_interval_path, model_name):
 
 
     # load the interval bound datasets
-    print 'Loading the training interval datasets...'
+    print('Loading the training interval datasets...')
     x_input = pickle.load(open(os.path.join(train_interval_path, 'x_input.pickle'), 'rb'))
     y_input = pickle.load(open(os.path.join(train_interval_path, 'y_input.pickle'), 'rb'))
     vectors_all = pickle.load(open(os.path.join(train_interval_path, 'vectors_all.pickle'), "rb"))
 
 
     # Load the test data
-    print 'Loading the testing interval datasets...'
+    print('Loading the testing interval datasets...')
     x_input_test = pickle.load(open(os.path.join(test_interval_path, 'x_input.pickle'), 'rb'))
     y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'))
     splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'))
@@ -265,9 +264,9 @@ def adv_train(model, train_interval_path, test_interval_path, model_name):
 
         if(args.resume):
             saver.restore(sess, PATH)
-            print "load model from:", PATH
+            print("load model from:", PATH)
         else:
-            print "initial model as:", PATH
+            print("initial model as:", PATH)
 
         j = 0
         i = 0
@@ -307,21 +306,21 @@ def adv_train(model, train_interval_path, test_interval_path, model_name):
                     # display vra
                     eval_vra(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
                     acc, fpr = eval(x_test, y_test, sess, model)
-                    print "======= test acc:", acc, "test fpr:", fpr
+                    print("======= test acc:", acc, "test fpr:", fpr)
 
             if cur_batch != 0 and cur_batch % args.verbose ==0:
                 lr*=args.lrdecay
-                print "batch_num:", cur_batch, "regular loss:", reg_l, "interval loss:",int_l, "regular train acc:", reg_acc , "epoch time:", time.time()-start_time
+                print("batch_num:", cur_batch, "regular loss:", reg_l, "interval loss:",int_l, "regular train acc:", reg_acc , "epoch time:", time.time()-start_time)
                 acc, fpr = eval(x_test, y_test, sess, model)
-                print "*** test acc:", acc, "test fpr:, ", fpr
+                print("*** test acc:", acc, "test fpr:, ", fpr)
 
-        print '======= DONE ======='
+        print('======= DONE =======')
         eval_vra(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
         acc, fpr = eval(x_test, y_test, sess, model)
-        print "======= test acc:", acc, "test fpr:", fpr
+        print("======= test acc:", acc, "test fpr:", fpr)
 
         saver.save(sess, save_path=PATH)
-        print "Model saved to", PATH
+        print("Model saved to", PATH)
 
 
 
@@ -357,7 +356,7 @@ def main(args):
         sess.run(tf.local_variables_initializer())
 
         saver.restore(sess, PATH)
-        print "load model from:", PATH
+        print("load model from:", PATH)
 
         y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'))
         splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'))
@@ -368,7 +367,7 @@ def main(args):
         x_input_test = []
         # the sequence depends on exploit_spec traversal
         idx = 0
-        for seed_sha1, exploit_paths in exploit_spec.iteritems():
+        for seed_sha1, exploit_paths in exploit_spec.items():
             if exploit_paths is None:
                 continue
             try:
@@ -382,9 +381,9 @@ def main(args):
             idx += 1
 
         x_input_test = np.array(x_input_test)
-        print 'Number of intervals for x_input_test:'
-        print x_input_test.shape
-        print 'Evaluating VRA...'
+        print('Number of intervals for x_input_test:')
+        print(x_input_test.shape)
+        print('Evaluating VRA...')
         # 15752 / 50.0 = 315.04
         eval_vra(args.batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
 
