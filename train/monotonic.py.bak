@@ -72,7 +72,7 @@ def eval(y, y_p):
         return accuracy_score(y, y_p), None
 
 def main(args):
-    print('Loading training datasets...')
+    print 'Loading training datasets...'
     train_data = '../data/traintest_all_500test/train_data.libsvm'
     x_train, y_train = datasets.load_svmlight_file(train_data,
                                        n_features=3514,
@@ -82,7 +82,7 @@ def main(args):
 
     x_train = x_train.toarray()
 
-    print('Loading testing datasets...')
+    print 'Loading testing datasets...'
     test_data = '../data/traintest_all_500test/test_data.libsvm'
     x_test, y_test = datasets.load_svmlight_file(test_data,
                                        n_features=3514,
@@ -114,13 +114,13 @@ def main(args):
     # make prediction
     y_true = [1 for i in range(3448)] + [0 for i in range(2698)]
     preds = model_with_constraints.predict(dtest)
-    print(preds[2372])
+    print preds[2372]
     y_pred = [1 if p > 0.5 else 0 for p in preds]
-    print(len(y_true), len(y_pred))
+    print len(y_true), len(y_pred)
     #print y_pred
     test_acc, test_fpr = eval(y_true, y_pred)
-    print('test accuracy: ', test_acc)
-    print('test FPR: ', test_fpr)
+    print 'test accuracy: ', test_acc
+    print 'test FPR: ', test_fpr
     model_with_constraints.save_model("../models/monotonic/%s.bin" % args.model_name)
     model_with_constraints.dump_model('../models/monotonic/%s.dumped.trees' % args.model_name)
 

@@ -6,7 +6,7 @@ import numpy as np
 import pickle
 from sklearn import datasets
 from sklearn.metrics import confusion_matrix, accuracy_score
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from model import Model
 import datetime
 import sys
@@ -15,11 +15,6 @@ import scipy
 
 devices = tf.config.list_physical_devices()
 print(devices)
-tf.compat.v1.disable_eager_execution()
-tf.disable_v2_behavior()
-
-
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
@@ -67,7 +62,7 @@ def eval(x, y, sess, model):
 def acc_fpr(y, y_p):
     try:
         tn, fp, fn, tp = confusion_matrix(y, y_p).ravel()
-        print('tn:', tn, ', fp:', fp, ',fn:', fn, 'tp:', tp)
+        print 'tn:', tn, ', fp:', fp, ',fn:', fn, 'tp:', tp
         acc = (tp+tn)/float(tp+tn+fp+fn)
         fpr = fp/float(fp+tn)
         return acc, fpr
@@ -78,7 +73,7 @@ def acc_fpr(y, y_p):
 def eval_vra_ins(batch_size, batch_num, x_input, y_input, vectors_all, splits, sess, model):
     start = 0
     end = 0
-    print('Starting prediction to test VRA...')
+    print 'Starting prediction to test VRA...'
     y = y_input.tolist()
     y_input_hat = []
     y_input_ipred = []
@@ -123,7 +118,7 @@ def eval_vra_ins(batch_size, batch_num, x_input, y_input, vectors_all, splits, s
     y_input_hat += y_pred.tolist()[:remain_size]
     y_input_ipred += ipred.tolist()[:remain_size]
 
-    print(('Total intervals evaluated:', len(y_input_ipred)))
+    print('Total intervals evaluated:', len(y_input_ipred))
 
     #compare correct label with predicted label using splits
     j = 0
@@ -138,15 +133,15 @@ def eval_vra_ins(batch_size, batch_num, x_input, y_input, vectors_all, splits, s
             ver_correct += 1
         j += cur_cnt
         total += 1
-    print('Total splits checked:', total)
+    print 'Total splits checked:', total
     final_acc = acc_correct/float(total)
     final_ver_acc = ver_correct/float(total)
-    print('======= acc:', final_acc, "ver_acc:", final_ver_acc)
+    print '======= acc:', final_acc, "ver_acc:", final_ver_acc
 
 def eval_vra_del(batch_size, batch_num, x_input, y_input, vectors_all, splits, sess, model):
     start = 0
     end = 0
-    print('Starting prediction to test VRA...')
+    print 'Starting prediction to test VRA...'
     y = y_input.tolist()
     y_input_hat = []
     y_input_ipred = []
@@ -191,7 +186,7 @@ def eval_vra_del(batch_size, batch_num, x_input, y_input, vectors_all, splits, s
     y_input_hat += y_pred.tolist()[:remain_size]
     y_input_ipred += ipred.tolist()[:remain_size]
 
-    print(('Total intervals evaluated:', len(y_input_ipred)))
+    print('Total intervals evaluated:', len(y_input_ipred))
 
     #compare correct label with predicted label using splits
     j = 0
@@ -206,16 +201,16 @@ def eval_vra_del(batch_size, batch_num, x_input, y_input, vectors_all, splits, s
             ver_correct += 1
         j += cur_cnt
         total += 1
-    print('Total splits checked:', total)
+    print 'Total splits checked:', total
     final_acc = acc_correct/float(total)
     final_ver_acc = ver_correct/float(total)
-    print('======= acc:', final_acc, "ver_acc:", final_ver_acc)
+    print '======= acc:', final_acc, "ver_acc:", final_ver_acc
 
 
 def eval_vra_monotonic(batch_size, batch_num, x_input, y_input, sess, model):
     start = 0
     end = 0
-    print('Starting prediction to test VRA...')
+    print 'Starting prediction to test VRA...'
     y = y_input.tolist()
     y_input_hat = []
     y_input_ipred = []
@@ -257,11 +252,11 @@ def eval_vra_monotonic(batch_size, batch_num, x_input, y_input, sess, model):
 
     # acc
     acc, fpr = acc_fpr(y, y_input_hat)
-    print(('======= acc:', acc))
+    print('======= acc:', acc)
 
     # ver_acc
     vra, fpr2 = acc_fpr(y, y_input_ipred)
-    print(('======= ver_acc:', vra))
+    print('======= ver_acc:', vra)
 
 
 def shuffle_data(x, y):
@@ -275,7 +270,7 @@ def generate_intervals(feat, spec):
     seed_dict = pickle.load(open(feat, 'rb'))
     exploit_spec = pickle.load(open(spec, 'rb'))
     x_input = []
-    for seed_sha1, exploit_paths in exploit_spec.items():
+    for seed_sha1, exploit_paths in exploit_spec.iteritems():
         if exploit_paths is None:
             continue
         try:
@@ -310,7 +305,7 @@ def adv_train(model, train_interval_path, model_name):
     # try combined loss
     optimizer_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(loss = regular_loss + interval_loss)
 
-    print('Loading regular training datasets...')
+    print 'Loading regular training datasets...'
     train_data = '../data/traintest_all_500test/train_data.libsvm'
     x_train, y_train = datasets.load_svmlight_file(train_data,
                                        n_features=3514,
@@ -319,9 +314,9 @@ def adv_train(model, train_interval_path, model_name):
                                        query_id=False)
     x_train = x_train.toarray()
 
-    print(x_train.shape)
+    print x_train.shape
 
-    print('Loading regular testing datasets...')
+    print 'Loading regular testing datasets...'
     test_data = '../data/traintest_all_500test/test_data.libsvm'
     x_test, y_test = datasets.load_svmlight_file(test_data,
                                        n_features=3514,
@@ -330,22 +325,21 @@ def adv_train(model, train_interval_path, model_name):
                                        query_id=False)
     x_test = x_test.toarray()
 
-    print(x_test.shape)
+    print x_test.shape
 
     # load the interval bound datasets
-    print('Loading the insertion training interval datasets...')
+    print 'Loading the insertion training interval datasets...'
     pickle_dir = args.train
-    print("pickle_dir: " + str(pickle_dir))
     ins_x_input = pickle.load(open(os.path.join(pickle_dir, 'x_input.pickle'), 'rb'))
     if type(ins_x_input[0]) == scipy.sparse.csr.csr_matrix:
         ins_x_input = np.array([item.toarray()[0] for item in ins_x_input])
     ins_y_input = pickle.load(open(os.path.join(pickle_dir, 'y_input.pickle'), 'rb'))
     ins_vectors_all = pickle.load(open(os.path.join(pickle_dir, 'vectors_all.pickle'), "rb"))
 
-    print(ins_x_input.shape)
+    print ins_x_input.shape
 
     # Load the test data
-    print('Loading the insertion testing interval datasets...')
+    print 'Loading the insertion testing interval datasets...'
     test_pickle_dir = 'robustness_spec/seed_test_malicious/mutate_insert_rootany/pickles/'
     ins_x_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'x_input.pickle'), 'rb'))
     if type(ins_x_input_test[0]) == scipy.sparse.csr.csr_matrix:
@@ -354,9 +348,9 @@ def adv_train(model, train_interval_path, model_name):
     ins_splits_test = pickle.load(open(os.path.join(test_pickle_dir, 'splits.pickle'), 'rb'))
     ins_vectors_all_test = pickle.load(open(os.path.join(test_pickle_dir, 'vectors_all.pickle'), "rb"))
 
-    print(ins_x_input_test.shape)
+    print ins_x_input_test.shape
 
-    print('Loading the deletion training interval datasets...')
+    print 'Loading the deletion training interval datasets...'
     pickle_dir = 'robustness_spec/seed_train_malicious/mutate_delete_one/pickles/'
     del_x_input = pickle.load(open(os.path.join(pickle_dir, 'x_input.pickle'), 'rb'))
     if type(del_x_input[0]) == scipy.sparse.csr.csr_matrix:
@@ -364,7 +358,7 @@ def adv_train(model, train_interval_path, model_name):
     del_y_input = pickle.load(open(os.path.join(pickle_dir, 'y_input.pickle'), 'rb'))
     del_vectors_all = pickle.load(open(os.path.join(pickle_dir, 'vectors_all.pickle'), "rb"))
 
-    print('Loading the deletion testing interval datasets...')
+    print 'Loading the deletion testing interval datasets...'
     test_pickle_dir = 'robustness_spec/seed_test_malicious/mutate_delete_one/pickles/'
     del_x_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'x_input.pickle'), 'rb'))
     if type(del_x_input_test[0]) == scipy.sparse.csr.csr_matrix:
@@ -374,16 +368,16 @@ def adv_train(model, train_interval_path, model_name):
     del_vectors_all_test = pickle.load(open(os.path.join(test_pickle_dir, 'vectors_all.pickle'), "rb"))
 
     # generate training and testing intervals
-    print('Generating the monotonic interval datasets')
+    print 'Generating the monotonic interval datasets'
     train_feat = 'robustness_spec/seed_train_malicious/feat_dict.pickle'
     train_spec = '../data/traintest_all_500test/exploit_spec/train_malicious.pickle'
     train_batches = 137
     test_feat = 'robustness_spec/seed_test_malicious/feat_dict.pickle'
     test_spec = '../data/traintest_all_500test/exploit_spec/test_malicious.pickle'
     test_batches = 68
-    print('Generating the training interval datasets...')
+    print 'Generating the training interval datasets...'
     m_x_input, m_x_upper, m_y_input = generate_intervals(train_feat, train_spec)
-    print('Generating the testing interval datasets...')
+    print 'Generating the testing interval datasets...'
     m_x_input_test, m_x_upper_test, m_y_input_test = generate_intervals(test_feat, test_spec)
 
     saver = tf.train.Saver()
@@ -394,19 +388,19 @@ def adv_train(model, train_interval_path, model_name):
 
         if(args.resume):
             saver.restore(sess, PATH)
-            print("load model from:", PATH)
+            print "load model from:", PATH
         else:
-            print("initial model as:", PATH)
+            print "initial model as:", PATH
 
         for epoch in range(10):
             start_time = time.time()
             # shuffle dataset within every epoch.
-            print('Shuffle the regular training datasets...')
+            print 'Shuffle the regular training datasets...'
             x_train, y_train = shuffle_data(x_train, y_train)
             # y_input is always ones.
-            print('Shuffle the insertion intervals...')
+            print 'Shuffle the insertion intervals...'
             ins_x_input, ins_vectors_all = shuffle_data(ins_x_input, ins_vectors_all)
-            print('Shuffle the deletion intervals...')
+            print 'Shuffle the deletion intervals...'
             del_x_input, del_vectors_all = shuffle_data(del_x_input, del_vectors_all)
 
             # regular training index
@@ -422,8 +416,8 @@ def adv_train(model, train_interval_path, model_name):
             b3 = len(del_x_input)/batch_size+1
             b4 = len(m_x_input)/batch_size+1
             robust_train_batch = [0 for s in range(b1)] + [1 for s in range(b2)] + [2 for s in range(b3)] + [3 for t in range(b4)]
-            print('regular batches:', b1, 'insertion batches:', b2, 'deletion batches:', b3, 'monotonic batches:', b4)
-            print('total batches to run each epoch:', len(robust_train_batch))
+            print 'regular batches:', b1, 'insertion batches:', b2, 'deletion batches:', b3, 'monotonic batches:', b4
+            print 'total batches to run each epoch:', len(robust_train_batch)
 
             random.shuffle(robust_train_batch)
             for s in range(len(robust_train_batch)):
@@ -527,28 +521,28 @@ def adv_train(model, train_interval_path, model_name):
                         m += batch_size
 
                 if s != 0 and s % args.verbose ==0:
-                    print("batch_num:", s, "regular loss:", reg_l, "interval loss:",int_l, "regular training acc:", reg_acc, "biased interval training acc:", acc)
+                    print "batch_num:", s, "regular loss:", reg_l, "interval loss:",int_l, "regular training acc:", reg_acc, "biased interval training acc:", acc
                     test_acc, test_fpr = eval(x_test, y_test, sess, model)
-                    print("*** test acc:", test_acc, "test fpr:, ", test_fpr)
+                    print "*** test acc:", test_acc, "test fpr:, ", test_fpr
 
             lr*=args.lrdecay
             # FINISHED ONE EPOCH
-            print('Finished epoch %d...' % (epoch+1))
+            print 'Finished epoch %d...' % (epoch+1)
             test_acc, test_fpr = eval(x_test, y_test, sess, model)
-            print("======= test acc:", test_acc, "test fpr:", test_fpr)
+            print "======= test acc:", test_acc, "test fpr:", test_fpr
             # display vra
-            print('INSERTION VRA')
+            print 'INSERTION VRA'
             eval_vra_ins(batch_size, 2869, ins_x_input_test, ins_y_input_test, ins_vectors_all_test, ins_splits_test, sess, model)
-            print('DELETION VRA')
+            print 'DELETION VRA'
             eval_vra_del(batch_size, 313, del_x_input_test, del_y_input_test, del_vectors_all_test, del_splits_test, sess, model)
-            print('MONOTONIC VRA')
+            print 'MONOTONIC VRA'
             eval_vra_monotonic(batch_size, test_batches, m_x_input_test, m_y_input_test, sess, model)
 
             if args.resume:
                 cur_path = '../models/adv_trained/%s_e%s.ckpt' % (model_name, epoch+11)
             else:
                 cur_path = '../models/adv_trained/%s_e%s.ckpt' % (model_name, epoch+1)
-            print('======= SAVING MODELS TO: %s' % cur_path)
+            print '======= SAVING MODELS TO: %s' % cur_path
             saver.save(sess, save_path=cur_path)
 
         """
@@ -563,7 +557,7 @@ def adv_train(model, train_interval_path, model_name):
         """
 
         saver.save(sess, save_path=PATH)
-        print("Model saved to", PATH)
+        print "Model saved to", PATH
 
 
 
@@ -573,9 +567,9 @@ def main(args):
 
     model = Model()
 
-    print((datetime.datetime.now()))
+    print(datetime.datetime.now())
     adv_train(model, args.train, args.model_name)
-    print((datetime.datetime.now()))
+    print(datetime.datetime.now())
     return
 
 
