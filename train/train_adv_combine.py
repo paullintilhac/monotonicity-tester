@@ -9,7 +9,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 import tensorflow.compat.v1 as tf
 from model import Model
 import scipy
-
+import random
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
 
@@ -52,7 +52,6 @@ def eval(x, y, sess, model):
                     feed_dict={model.x_input:x,\
                     model.y_input:y
                     })
-
     try:
         tn, fp, fn, tp = confusion_matrix(y, y_p).ravel()
         acc = (tp+tn)/float(tp+tn+fp+fn)
@@ -60,7 +59,6 @@ def eval(x, y, sess, model):
         return acc, fpr
     except ValueError:
         return accuracy_score(y, y_p), None
-
 
 def train(model):
     PATH = '../models/adv_trained/%s.ckpt' % args.model_name
@@ -326,13 +324,46 @@ def new_baseline_adv_train(model, model_name):
                 print("batch_num:", cur_batch, "regular loss:", reg_l, "regular train acc:", reg_acc , "epoch time:", time.time()-start_time)
                 acc, fpr = eval(x_test, y_test, sess, model)
                 print("*** test acc:", acc, "test fpr:, ", fpr)
+        
+        def mutate(x,y):
+            inds = np.where(x==1-y)[0]
+            newInd = random.choice(inds)
+            x[newInd]=1-x[newInd]
+            return x
 
+        newX=x_test.copy()
 
         print('======= DONE =======')
         #eval_vra(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
-        acc, fpr = eval(x_test, y_test, sess, model)
-        print("======= test acc:", acc, "test fpr:", fpr)
 
+        y_p = sess.run(model.y_pred,\
+                    feed_dict={model.x_input:newX,\
+                    model.y_input:y_test
+                    })
+        
+        x_mutated = []
+        for i in range(len(x_test)):
+            x_mutated.append(mutate(newX[i],y_p[i]))
+
+        y_mutated = sess.run(model.y_pred,\
+                    feed_dict={model.x_input:x_mutated,\
+                    model.y_input:y_test
+                    })
+        with open("train_adv_combine_test.txt", "w") as txt_file:
+            for i in range(len(x_mutated)):
+                sum_orig = str(np.sum(x_test[i]))
+                sum_mutated = str(np.sum(x_mutated[i]))
+                mutated_pred = str(y_mutated[i])
+                orig_pred = str(y_p[i])
+                if orig_pred!=mutated_pred:
+                    print("FOUND MIISMATCH")
+                    print("orig: "+orig_pred+ ", mutated: " +mutated_pred)
+                txt_file.write(" ".join([sum_orig,orig_pred,sum_mutated,mutated_pred]) + "\n") # works with any number of elements in a line
+
+        acc, fpr = eval(x_test, y_test, sess, model)
+        print("======= test acc final:", acc, "test fpr:", fpr)
+        mutated_acc, mutated_fpr = eval(x_mutated, y_test, sess, model)
+        print("======= mutated test acc:", mutated_acc, "mutated test fpr:", mutated_fpr)
         saver.save(sess, save_path=PATH)
         print("Model saved to", PATH)
 

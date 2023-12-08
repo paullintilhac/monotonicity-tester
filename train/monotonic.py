@@ -71,7 +71,8 @@ def eval(y, y_p):
     except ValueError:
         return accuracy_score(y, y_p), None
 def mutate(x,y):
-    inds = np.where(x==1-y)
+    inds = np.where(x==1-y)[0]
+    
     newInd = random.choice(inds)
     x[newInd]=1-x[newInd]
     return x
@@ -115,27 +116,36 @@ def main(args):
     model_with_constraints = xgb.train(params_constrained, dtrain,
                                    num_boost_round = args.num_trees, evals = evallist)
     #early_stopping_rounds = 10)
-    print("x_test[0]: "+ str(x_test[0]) + "len(x_test): " + str(len(x_test[0])))
     # make prediction
     y_true = [1 for i in range(3448)] + [0 for i in range(2698)]
     preds = model_with_constraints.predict(dtest)
-    x_mutated = []
-    for i in range(len(x_test)):
-        x_mutated.append(mutate(x_test[i],preds[i]))
-    dmutated = xgb.DMatrix(x_mutated,label=y_test)
-    mutated_preds = model_with_constraints.predict(dmutated)
 
     print(preds[2372])
     y_pred = [1 if p > 0.5 else 0 for p in preds]
+    xNew = x_test.copy()
+    x_mutated = []
+    for i in range(len(x_test)):
+        x_mutated.append(mutate(xNew[i],y_pred[i]))
+    dmutated = xgb.DMatrix(x_mutated,label=y_test)
+    mutated_preds = model_with_constraints.predict(dmutated)
     y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
+    with open("monotonic_test.txt", "w") as txt_file:
+            for i in range(len(x_mutated)):
+                sum_orig = str(np.sum(x_test[i]))
+                sum_mutated = str(np.sum(x_mutated[i]))
+                mutated_pred = str(y_mutated[i])
+                orig_pred = str(y_pred[i])
+                txt_file.write(" ".join([sum_orig,orig_pred,sum_mutated,mutated_pred]) + "\n") # works with any number of elements in a line
+
+
     print(len(y_true), len(y_pred))
     #print y_pred
     test_acc, test_fpr = eval(y_true, y_pred)
     print('test accuracy: ', test_acc)
     print('test FPR: ', test_fpr)
     test_acc_mutated, test_fpr_mutated = eval(y_true, y_mutated)
-    print('mutated test accuracy: ', test_acc)
-    print('mutated test FPR: ', test_fpr)
+    print('mutated test accuracy: ', test_acc_mutated)
+    print('mutated test FPR: ', test_fpr_mutated)
     model_with_constraints.save_model("../models/monotonic/%s.bin" % args.model_name)
     model_with_constraints.dump_model('../models/monotonic/%s.dumped.trees' % args.model_name)
 

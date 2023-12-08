@@ -6,14 +6,16 @@ import numpy as np
 import pickle
 from sklearn import datasets
 from sklearn.metrics import confusion_matrix, accuracy_score
-import tensorflow as tf
+import tensorflow.compat.v1 as tf
 from model import Model
+import random
+
+tf.disable_eager_execution()
+tf.disable_v2_behavior()
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
     parser.add_argument('--train', type=str, help='Training interval data.')
-    parser.add_argument('--test', type=str, help='Testing interval data.', required=True)
-    parser.add_argument('--test_batches', type=int, help='Number of testing batches', required=True)
     parser.add_argument('--seed_feat', type=str, help='Seed feature value pickle.')
     parser.add_argument('--exploit_spec', type=str, help='Exploit specification file.')
     parser.add_argument('--model_name', type=str, help='Save to this model.', default='test_model_name')
@@ -135,16 +137,57 @@ def train(model):
                     test_acc, test_fpr = eval(x_test, y_test, sess, model)
                     print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
+        def mutate(x,y):
+            inds = np.where(x==1-y)[0]
+            newInd = random.choice(inds)
+            x[newInd]=1-x[newInd]
+            return x
+
+        newX=x_test.copy()
+
+        y_p = sess.run(model.y_pred,\
+                    feed_dict={model.x_input:newX,\
+                    model.y_input:y_test
+                    })
+        
+        x_mutated = []
+        for i in range(len(x_test)):
+            x_mutated.append(mutate(newX[i],y_p[i]))
+
+        y_mutated = sess.run(model.y_pred,\
+                    feed_dict={model.x_input:x_mutated,\
+                    model.y_input:y_test
+                    })
+        
+        with open("train_baseline.txt", "w") as txt_file:
+            for i in range(len(x_mutated)):
+                sum_orig = str(np.sum(x_test[i]))
+                sum_mutated = str(np.sum(x_mutated[i]))
+                mutated_pred = str(y_mutated[i])
+                orig_pred = str(y_p[i])
+                print("hi!")
+                if orig_pred!=mutated_pred:
+                    print("FOUND MIISMATCH")
+                    print("orig: "+orig_pred+ ", mutated: " +mutated_pred)
+                txt_file.write(" ".join([sum_orig,orig_pred,sum_mutated,mutated_pred]) + "\n") # works with any number of elements in a line
+
+
+        
+        print("x_test len: " + str(len(x_test)))
         epoch = batch_num * batch_size / x_train.shape[0]
         print("epoch:", epoch, " loss:",l, "train acc:", acc, "epoch time:", time.time()-start_time)
 
         test_acc, test_fpr = eval(x_test, y_test, sess, model)
         print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
+        m_acc, m_fpr = eval(x_mutated, y_test, sess, model)
+        print("======= mutated test acc:", m_acc, "test fpr:", m_fpr)
+
         saver.save(sess, save_path=PATH)
         print("Model saved to", PATH)
 
 def eval_vra(batch_size, batch_num, x_input, y_input, vectors_all, splits, sess, model):
+
     start = 0
     end = 0
     print('Starting prediction to test VRA...')
@@ -313,6 +356,7 @@ def adv_train(model, train_interval_path, test_interval_path, model_name):
                 print("batch_num:", cur_batch, "regular loss:", reg_l, "interval loss:",int_l, "regular train acc:", reg_acc , "epoch time:", time.time()-start_time)
                 acc, fpr = eval(x_test, y_test, sess, model)
                 print("*** test acc:", acc, "test fpr:, ", fpr)
+
 
         print('======= DONE =======')
         eval_vra(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
