@@ -6,7 +6,7 @@ from sklearn.metrics import confusion_matrix, accuracy_score
 from sklearn import datasets
 import random
 from logging import getLogger, basicConfig, INFO
-
+import pickle
 import numpy as np
 #import xgboost as xgb
 from sklearn.datasets import load_digits
@@ -70,11 +70,11 @@ def eval(y, y_p):
         return acc, fpr
     except ValueError:
         return accuracy_score(y, y_p), None
-def mutate(x,y):
+def mutate(x,y,k=1):
     inds = np.where(x==1-y)[0]
-    
-    newInd = random.choice(inds)
-    x[newInd]=1-x[newInd]
+    for i in range(k):
+        newInd = random.choice(inds)
+        x[newInd]=1-x[newInd]
     return x
 
 def main(args):
@@ -125,17 +125,28 @@ def main(args):
     xNew = x_test.copy()
     x_mutated = []
     for i in range(len(x_test)):
-        x_mutated.append(mutate(xNew[i],y_pred[i]))
+        x_mutated.append(mutate(xNew[i],y_pred[i],k=1))
     dmutated = xgb.DMatrix(x_mutated,label=y_test)
     mutated_preds = model_with_constraints.predict(dmutated)
     y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
-    with open("monotonic_test.txt", "w") as txt_file:
-            for i in range(len(x_mutated)):
-                sum_orig = str(np.sum(x_test[i]))
-                sum_mutated = str(np.sum(x_mutated[i]))
-                mutated_pred = str(y_mutated[i])
-                orig_pred = str(y_pred[i])
-                txt_file.write(" ".join([sum_orig,orig_pred,sum_mutated,mutated_pred]) + "\n") # works with any number of elements in a line
+    finalArray = []
+    for i in range(len(x_mutated)):
+        sum_orig = str(np.sum(x_test[i]))
+        sum_mutated = str(np.sum(x_mutated[i]))
+        mutated_pred = str(y_mutated[i])
+        orig_pred = str(y_pred[i])
+        finalObj={
+            'sum_orig': sum_orig,
+            'sum_mutated': sum_mutated,
+            'mutated_pred': mutated_pred,
+            'orig_pred': orig_pred,
+            'x_test': x_test[i],
+            'x_mutated': x_mutated[i]
+        }
+        finalArray.append(finalObj)
+            
+        with open('monotonic.pickle', 'wb') as handle:
+            pickle.dump(finalArray, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
     print(len(y_true), len(y_pred))

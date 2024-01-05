@@ -325,10 +325,11 @@ def new_baseline_adv_train(model, model_name):
                 acc, fpr = eval(x_test, y_test, sess, model)
                 print("*** test acc:", acc, "test fpr:, ", fpr)
         
-        def mutate(x,y):
+        def mutate(x,y,k=1):
             inds = np.where(x==1-y)[0]
-            newInd = random.choice(inds)
-            x[newInd]=1-x[newInd]
+            for i in range(k):
+                newInd = random.choice(inds)
+                x[newInd]=1-x[newInd]
             return x
 
         newX=x_test.copy()
@@ -343,22 +344,31 @@ def new_baseline_adv_train(model, model_name):
         
         x_mutated = []
         for i in range(len(x_test)):
-            x_mutated.append(mutate(newX[i],y_p[i]))
+            x_mutated.append(mutate(newX[i],y_p[i],k=1))
 
         y_mutated = sess.run(model.y_pred,\
                     feed_dict={model.x_input:x_mutated,\
                     model.y_input:y_test
                     })
-        with open("train_adv_combine_test.txt", "w") as txt_file:
-            for i in range(len(x_mutated)):
-                sum_orig = str(np.sum(x_test[i]))
-                sum_mutated = str(np.sum(x_mutated[i]))
-                mutated_pred = str(y_mutated[i])
-                orig_pred = str(y_p[i])
-                if orig_pred!=mutated_pred:
-                    print("FOUND MIISMATCH")
-                    print("orig: "+orig_pred+ ", mutated: " +mutated_pred)
-                txt_file.write(" ".join([sum_orig,orig_pred,sum_mutated,mutated_pred]) + "\n") # works with any number of elements in a line
+        
+        finalArray = []
+        for i in range(len(x_mutated)):
+            sum_orig = str(np.sum(x_test[i]))
+            sum_mutated = str(np.sum(x_mutated[i]))
+            mutated_pred = str(y_mutated[i])
+            orig_pred = str(y_p[i])
+            finalObj={
+                'sum_orig': sum_orig,
+                'sum_mutated': sum_mutated,
+                'mutated_pred': mutated_pred,
+                'orig_pred': orig_pred,
+                'x_test': x_test[i],
+                'x_mutated': x_mutated[i]
+            }
+            finalArray.append(finalObj)
+            
+        with open('train_adv_combine.pickle', 'wb') as handle:
+            pickle.dump(finalArray, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         acc, fpr = eval(x_test, y_test, sess, model)
         print("======= test acc final:", acc, "test fpr:", fpr)

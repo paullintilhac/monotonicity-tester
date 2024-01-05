@@ -10,6 +10,17 @@ import tensorflow as tf
 from model import Model
 import pdfrw
 import scipy
+import random
+import tensorflow.compat.v1 as tf
+tf.disable_eager_execution()
+tf.disable_v2_behavior()
+
+def mutate(x,y,k=1):
+    inds = np.where(x==1-y)[0]
+    for i in range(k):
+        newInd = random.choice(inds)
+        x[newInd]=1-x[newInd]
+    return x
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
@@ -260,6 +271,42 @@ def new_baseline_adv_train(model, train_interval_path, test_interval_path, model
                 print("*** test acc:", acc, "test fpr:, ", fpr)
 
         print('======= DONE =======')
+        newX=x_test.copy()
+        #eval_vra(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
+
+        y_p = sess.run(model.y_pred,\
+                    feed_dict={model.x_input:newX,\
+                    model.y_input:y_test
+                    })
+        
+        x_mutated = []
+        for i in range(len(x_test)):
+            x_mutated.append(mutate(newX[i],y_p[i],k=1))
+
+        y_mutated = sess.run(model.y_pred,\
+                    feed_dict={model.x_input:x_mutated,\
+                    model.y_input:y_test
+                    })
+        
+        finalArray = []
+        for i in range(len(x_mutated)):
+            sum_orig = str(np.sum(x_test[i]))
+            sum_mutated = str(np.sum(x_mutated[i]))
+            mutated_pred = str(y_mutated[i])
+            orig_pred = str(y_p[i])
+            finalObj={
+                'sum_orig': sum_orig,
+                'sum_mutated': sum_mutated,
+                'mutated_pred': mutated_pred,
+                'orig_pred': orig_pred,
+                'x_test': x_test[i],
+                'x_mutated': x_mutated[i]
+            }
+            finalArray.append(finalObj)
+            
+        with open('train_adv.pickle', 'wb') as handle:
+            pickle.dump(finalArray, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
         acc, fpr = eval(x_test, y_test, sess, model)
         print("======= test acc:", acc, "test fpr:", fpr)
 
