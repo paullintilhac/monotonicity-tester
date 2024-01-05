@@ -2,3 +2,4 @@ train/robustness_spec/*
 *.pickle
 *.ckpt*
 models/
+TEMFOM/sat-dat-train.hf/
