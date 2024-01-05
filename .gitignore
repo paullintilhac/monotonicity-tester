@@ -1,2 +1,3 @@
 train/robustness_spec/*
 *.pickle
+*.ckpt*
