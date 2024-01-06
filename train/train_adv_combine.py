@@ -325,13 +325,10 @@ def new_baseline_adv_train(model, model_name):
                 acc, fpr = eval(x_test, y_test, sess, model)
                 print("*** test acc:", acc, "test fpr:, ", fpr)
         
-        def mutate(x,y,k=1):
-            inds = np.where(x==1-y)[0]
-            for i in range(k):
-                newInd = random.choice(inds)
-                x[newInd]=1-x[newInd]
-            return x
-
+        cur_path = '../models/adv_trained/final.ckpt' % (model_name, epoch)
+        print('======= SAVING MODELS TO: %s' % cur_path)
+        saver.save(sess, save_path=cur_path)
+        
         newX=x_test.copy()
 
         print('======= DONE =======')
@@ -342,38 +339,24 @@ def new_baseline_adv_train(model, model_name):
                     model.y_input:y_test
                     })
         
-        x_mutated = []
-        for i in range(len(x_test)):
-            x_mutated.append(mutate(newX[i],y_p[i],k=1))
-
-        y_mutated = sess.run(model.y_pred,\
-                    feed_dict={model.x_input:x_mutated,\
-                    model.y_input:y_test
-                    })
-        
         finalArray = []
-        for i in range(len(x_mutated)):
+        for i in range(len(x_test)):
             sum_orig = str(np.sum(x_test[i]))
-            sum_mutated = str(np.sum(x_mutated[i]))
-            mutated_pred = str(y_mutated[i])
             orig_pred = str(y_p[i])
             finalObj={
                 'sum_orig': sum_orig,
-                'sum_mutated': sum_mutated,
-                'mutated_pred': mutated_pred,
                 'orig_pred': orig_pred,
                 'x_test': x_test[i],
-                'x_mutated': x_mutated[i]
             }
             finalArray.append(finalObj)
             
-        with open('train_adv_combine.pickle', 'wb') as handle:
+        with open('x_test.pickle', 'wb') as handle:
             pickle.dump(finalArray, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
         acc, fpr = eval(x_test, y_test, sess, model)
         print("======= test acc final:", acc, "test fpr:", fpr)
-        mutated_acc, mutated_fpr = eval(x_mutated, y_test, sess, model)
-        print("======= mutated test acc:", mutated_acc, "mutated test fpr:", mutated_fpr)
+        # mutated_acc, mutated_fpr = eval(x_mutated, y_test, sess, model)
+        # print("======= mutated test acc:", mutated_acc, "mutated test fpr:", mutated_fpr)
         saver.save(sess, save_path=PATH)
         print("Model saved to", PATH)
 
@@ -384,12 +367,14 @@ def main(args):
     # Initialize the model
 
     model = Model()
-
+    print("In Evaluation Mode? " + str(args.evaluate) + ", baseline? " + str(args.baseline))
     if(not args.evaluate):
         if(args.baseline):
             train(model)
+            print("running regular training")
             return
         else:
+            print("running new_baseline_adv_train")
             new_baseline_adv_train(model, args.model_name)
             return
 

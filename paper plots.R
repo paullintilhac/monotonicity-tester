@@ -37,44 +37,51 @@ M = matrix(NA,ncol = n_d,nrow=n_e)
 
 row.names(M)=eps
 colnames(M)=delta
+n = 3514
 
 for (i in 1:nrow(dat)){
   e_ind = which(eps==dat[i,]$epsilon)
   d_ind = which(delta==dat[i,]$delta)
+  e = dat[i,]$epsilon
+  d = dat[i,]$delta
+  m_local = log(1/d)/log(n/(n-e))
+  m_local = formatC(m_local, format = "e", digits = 0)
+
   print("success")
   print(dat[i,]$success)
   if (dat[i,]$success=="Reject"){
     #M[e_ind,d_ind]=-1
-    M[e_ind,d_ind]="Reject"
+    M[e_ind,d_ind]=paste0("Reject \n (m~",m_local,")")
     
   }
   if (dat[i,]$success=="Accept"){
     #M[e_ind,d_ind]=1
-    M[e_ind,d_ind]="Accept"
+    M[e_ind,d_ind]=paste0("Accept \n (m~",m_local,")")
   }
   if (dat[i,]$success=="N/A"){
     #M[e_ind,d_ind]=0
-    M[e_ind,d_ind]="N/A"
+    M[e_ind,d_ind]=paste0("N/A \n (m~", m_local,")")
   }
 }
 kable(M, "latex")
 ht = as_hux(M,
             add_colnames=TRUE,
-            add_rownames="\\epsilon \\ \\delta",
+            add_rownames="epsilon \\ delta",
             autoformat = getOption("huxtable.autoformat", TRUE),
             caption = "Hello"
             )
+width(ht) <- 1
 set_caption(ht, "Adversarially Retrained Model Monotonicity")
 
 for (i in 1:nrow(M)+1){
   for (j in 1:ncol(M)+1){
-    if (ht[i,j]=="Accept"){
+    if (grepl("Accept",ht[i,j])){
       ht=set_background_color(ht, i,j, "green")
     }
-    if (ht[i,j]=="Reject"){
+    if (grepl("Reject",ht[i,j])){
       ht=set_background_color(ht, i,j, "red")
     }
-    if (ht[i,j]=="N/A"){
+    if (grepl("N/A",ht[i,j])){
       ht=set_background_color(ht, i,j, "gray")
     }
   }

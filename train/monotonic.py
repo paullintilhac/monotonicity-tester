@@ -61,7 +61,6 @@ def log_evaluation(period=1, show_stdv=True):
 
     return callback
 
-
 def eval(y, y_p):
     try:
         tn, fp, fn, tp = confusion_matrix(y, y_p).ravel()
@@ -70,6 +69,7 @@ def eval(y, y_p):
         return acc, fpr
     except ValueError:
         return accuracy_score(y, y_p), None
+    
 def mutate(x,y,k=1):
     inds = np.where(x==1-y)[0]
     for i in range(k):
@@ -115,6 +115,8 @@ def main(args):
     #callbacks = [log_evaluation(1, True)] callbacks=callbacks
     model_with_constraints = xgb.train(params_constrained, dtrain,
                                    num_boost_round = args.num_trees, evals = evallist)
+    model_with_constraints.save_model("monotonic_xgb.json")
+
     #early_stopping_rounds = 10)
     # make prediction
     y_true = [1 for i in range(3448)] + [0 for i in range(2698)]
