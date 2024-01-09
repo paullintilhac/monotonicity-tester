@@ -13,6 +13,11 @@ import random
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
 
+
+with open('bad_monotone.pickle', 'rb') as f:
+    x_bad = pickle.load(f)
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
     parser.add_argument('--seed_feat', type=str, help='Seed feature value pickle.')
@@ -235,7 +240,6 @@ def new_baseline_adv_train(model, model_name):
                                        zero_based=False,
                                        query_id=False)
     x_test = x_test.toarray()
-
     print('x_test.shape:', x_test.shape)
 
     # load the interval bound datasets. they will be used for adversarial retraining.

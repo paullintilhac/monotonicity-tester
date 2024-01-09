@@ -6,7 +6,6 @@ import csv
 file = "monotonic"
 # file = "train"
 
-D = "centered_in"
 
 with open(file+'.pickle', 'rb') as f:
     x = pickle.load(f)
@@ -24,8 +23,6 @@ print("n_features: " + str(n_features))
 print("eps: "+ str(eps))
 delta = [.01,.03,.05,.07,.09,.11]
 print("delta: " +str(delta))
-
-
 
 with open(file+'.csv', 'w', newline='') as file:
     writer = csv.writer(file)
