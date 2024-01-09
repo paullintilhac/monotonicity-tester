@@ -14,8 +14,12 @@ tf.disable_v2_behavior()
 D = "uniform"
 batch_size = 50
 filename="monotonic"
-maxM = 10000
+maxM = 100000
 path = False
+eps = [.1, .15]
+delta = [.15,.3]
+# eps = [.01,.05,.1, .15]
+# delta = [.01,.05,.15,.3]
 
 print('Loading regular testing datasets...')
 test_data = '../data/traintest_all_500test/test_data.libsvm'
@@ -44,15 +48,13 @@ if filename == "monotonic":
 
 learning_rate = tf.placeholder(tf.float32)
 saver = tf.train.Saver()
-maxM = 100000
 
 n_obs = len(x_test)
 n_features = len(x_test[0])
 
 #eps = [.9]
 #delta = [.9]
-eps = [.01,.05,.1, .15]
-delta = [.01,.05,.15,.3]
+
 
 
 def mutate(x,y,k=1,path=False):
@@ -72,7 +74,8 @@ def mutate(x,y,k=1,path=False):
             newInd = random.choice(inds)
             x[newInd]=1-x[newInd]
         return x
-    
+
+
 def testBatch(x,sess=None,xgb_mod=None,cap=None,centered=True,path=False):
     print("cap: " + str(cap) + ", len(x at top): " + str(len(x)))
     if not cap:
@@ -80,20 +83,19 @@ def testBatch(x,sess=None,xgb_mod=None,cap=None,centered=True,path=False):
     if not sess and not xgb_mod:
         print("NEED EITHER THE MONOTONIC MODEL OR NN")
         return   
-    print("cap: " + str(cap))     
-    if cap==1: 
-        cap=2
     x = x[:cap]
     xNew = []
     x_mutated = []
-
+    print("sess: " + str(sess))
     # centered is the hamming neighbor selection strategy
     # using mutation for centered-in and uniform distributions
     if centered:
         xNew = x.copy()
+        print("BEFORE")
         y = sess.run(model.y_pred,\
-                feed_dict={model.x_input:x,\
+                feed_dict={model.x_input:xNew,\
             })
+        print("AFTER")
         y=y[:cap]
         for i in range(len(xNew)):
             x_mutated.append(mutate(xNew[i],y[i],k=1,path=path))
@@ -178,7 +180,6 @@ with open(filename+'.csv', 'w', newline='') as file:
             for d in delta:
                 np.random.shuffle(x_test)
                 
-                print("p: " + str(p))
                 if path:
                     m = int(np.ceil(np.log(1/d)/np.log(n_features/(np.sqrt(n_features)-(e**2)))))
                 else:
@@ -186,7 +187,6 @@ with open(filename+'.csv', 'w', newline='') as file:
 
                 print("delta: " + str(d)+ ", epsilon: " + str(e) + ", m: " + str(m))
                 
-                y_p=None 
                 success="Accept"
                 if m>maxM:
                     print("setting success to N/A")
@@ -209,7 +209,12 @@ with open(filename+'.csv', 'w', newline='') as file:
                         elif D=="uniform":
                             x_input = [np.random.randint(2,size=n_features) for _ in range(len(x_test))]
                             print('done initializing random matrix')
-                        if testBatch(x_input,y_p,sess,xgb_mod = xgb_model,path=path) == "Reject":
+                            y = sess.run(model.y_pred,\
+                                feed_dict={model.x_input:x_input,\
+                                model.y_input:y_test
+                            })
+                            print("after allocating y")
+                        if testBatch(x_input,sess,xgb_mod = xgb_model,path=path) == "Reject":
                             success="Reject"
                             maxRounds = r
                             break
@@ -218,7 +223,7 @@ with open(filename+'.csv', 'w', newline='') as file:
                     elif D=="uniform":
                         x_input = [np.random.randint(2,size=n_features) for _ in range(len(x_test))]
                     print("rounds completed: " + str(maxRounds) + " out of " + str(numRounds))
-                    if testBatch(x_input,y_p,sess,xgb_mod = xgb_model,cap = remainderRound,path=path ) == "Reject":
+                    if testBatch(x_input,sess,xgb_mod = xgb_model,cap = remainderRound,path=path ) == "Reject":
                         success="Reject"
                                 
                 writer.writerow([e, d,success])
