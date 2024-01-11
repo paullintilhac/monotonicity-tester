@@ -26,7 +26,7 @@ df2$thresh = df2$eps - sqrt((1/(2*df2$m))*log(1/df2$delta))
 df2$ratio = 1/df2$thresh
 head(df2[df2$thresh>0,])
 
-file = "~/code/pdfclassifier/train/train_adv_combine_centered_path.csv"
+file = "~/code/pdfclassifier/train/robust_combine_three_uniform.csv"
 dat = read.csv(file)
 eps = unique(dat$epsilon)
 delta = unique(dat$delta)
@@ -73,7 +73,7 @@ ht = as_hux(M,
             autoformat = getOption("huxtable.autoformat", TRUE),
             caption = "Hello"
             )
-width(ht) <- .4
+width(ht) <- .6
 set_caption(ht, "Monotonicity Test for Monotonic Model")
 
 for (i in 1:nrow(M)+1){
