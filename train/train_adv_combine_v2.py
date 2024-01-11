@@ -6,12 +6,12 @@ import numpy as np
 import pickle
 from sklearn import datasets
 from sklearn.metrics import confusion_matrix, accuracy_score
-import tensorflow.compat.v1 as tf
+import tensorflow as tf
 from model_v2 import Model
 import scipy
 import random
-tf.disable_eager_execution()
-tf.disable_v2_behavior()
+tf.compat.v1.disable_eager_execution()
+tf.compat.v1.disable_v2_behavior()
 
 
 with open('bad_monotone.pickle', 'rb') as f:
@@ -65,16 +65,16 @@ def eval(x, y, sess, model):
         return accuracy_score(y, y_p), None
 
 def train(model):
-    PATH = '../models/adv_trained/%s.ckpt' % args.model_name
+    PATH = '../models/adv_trained/%s_v2.ckpt' % args.model_name
     batch_size = args.batch_size
     batch_num = args.batches
     lr = args.lr
 
-    learning_rate = tf.placeholder(tf.float32)
+    learning_rate = tf.compat.v1.placeholder(tf.float32)
 
     loss = model.xent
 
-    optimizer_op = tf.train.AdamOptimizer(learning_rate=\
+    optimizer_op = tf.compat.v1.train.AdamOptimizer(learning_rate=\
                             learning_rate).minimize(loss)
 
     print('Loading regular training datasets...')
@@ -99,14 +99,13 @@ def train(model):
                                        query_id=False)
     x_test = x_test.toarray()
 
-    saver = tf.train.Saver()
-
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
+    checkpoint = tf.train.Checkpoint(model)
+    with tf.compat.v1.Session() as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
+        sess.run(tf.compat.v1.local_variables_initializer())
 
         if(args.resume):
-            saver.restore(sess, PATH)
+            checkpoint.restore(PATH)
             print("load model from:", PATH)
         else:
             print("initial model as:", PATH)
@@ -144,7 +143,7 @@ def train(model):
         test_acc, test_fpr = eval(x_test, y_test, sess, model)
         print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
-        saver.save(sess, save_path=PATH)
+        checkpoint.save(PATH)
         print("Model saved to", PATH)
 
 def eval_vra(batch_size, batch_num, x_input, y_input, vectors_all, splits, sess, model):
@@ -207,16 +206,16 @@ def shuffle_data(x, y):
 
 
 def new_baseline_adv_train(model, model_name):
-    PATH = '../models/adv_trained/%s.ckpt' % model_name
+    PATH = '../models/adv_trained/%s_v2.ckpt' % model_name
     batch_size = args.batch_size
     batch_num = args.batches
     lr = args.lr
 
-    learning_rate = tf.placeholder(tf.float32)
+    learning_rate = tf.compat.v1.placeholder(tf.float32)
 
     #for regular training
     regular_loss = model.xent
-    optimizer_op = tf.train.AdamOptimizer(learning_rate=learning_rate).minimize(regular_loss)
+    optimizer_op = tf.compat.v1.train.AdamOptimizer(learning_rate=learning_rate).minimize(regular_loss)
 
     model.tf_interval1(batch_size)
 
@@ -265,14 +264,14 @@ def new_baseline_adv_train(model, model_name):
     y_input_ins2 = pickle.load(open(os.path.join(pickle_dir, 'y_input.pickle'), 'rb'),encoding='latin1')
     vectors_all_ins2 = pickle.load(open(os.path.join(pickle_dir, 'vectors_all.pickle'), "rb"),encoding='latin1')
     print('vectors_all_ins2.shape:', vectors_all_ins2.shape)
-    saver = tf.train.Saver()
+    checkpoint = tf.train.Checkpoint(variables=[model])
 
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
+    with tf.compat.v1.Session() as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
+        sess.run(tf.compat.v1.local_variables_initializer())
 
         if(args.resume):
-            saver.restore(sess, PATH)
+            checkpoint.restore( PATH)
             print("load model from:", PATH)
         else:
             print("initial model as:", PATH)
@@ -309,9 +308,9 @@ def new_baseline_adv_train(model, model_name):
                                 )
                 epoch += 1
                 print('Finished epoch %d...' % epoch)
-                cur_path = '../models/adv_trained/%s_e%s.ckpt' % (model_name, epoch)
+                cur_path = '../models/adv_trained/%s_e%s_v2.ckpt' % (model_name, epoch)
                 print('======= SAVING MODELS TO: %s' % cur_path)
-                saver.save(sess, save_path=cur_path)
+                checkpoint.save( cur_path)
 
                 print('Shuffle the training datasets...')
                 all_x_train, all_y_train = shuffle_data(all_x_train, all_y_train)
@@ -324,36 +323,12 @@ def new_baseline_adv_train(model, model_name):
                 acc, fpr = eval(x_test, y_test, sess, model)
                 print("*** test acc:", acc, "test fpr:, ", fpr)
         
-        cur_path = '../models/adv_trained/final.ckpt' % (model_name, epoch)
-        print('======= SAVING MODELS TO: %s' % cur_path)
-        saver.save(sess, save_path=cur_path)
-        
-        newX=x_test.copy()
-
-        print('======= DONE =======')
-        #eval_vra(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
-
-        y_p = sess.run(model.y_pred,\
-                    feed_dict={model.x_input:newX,\
-                    model.y_input:y_test
-                    })
-        
-        finalArray = []
-        for i in range(len(x_test)):
-            sum_orig = str(np.sum(x_test[i]))
-            orig_pred = str(y_p[i])
-            finalObj={
-                'sum_orig': sum_orig,
-                'orig_pred': orig_pred,
-                'x_test': x_test[i],
-            }
-            finalArray.append(finalObj)
-        
+       
         acc, fpr = eval(x_test, y_test, sess, model)
         print("======= test acc final:", acc, "test fpr:", fpr)
         # mutated_acc, mutated_fpr = eval(x_mutated, y_test, sess, model)
         # print("======= mutated test acc:", mutated_acc, "mutated test fpr:", mutated_fpr)
-        saver.save(sess, save_path=PATH)
+        checkpoint.save( PATH)
         print("Model saved to", PATH)
 
 
@@ -388,12 +363,12 @@ def main(args):
     model.tf_interval1(args.batch_size)
     test_interval_path = 'robustness_spec/seed_test_malicious/mutate_insert_rootallbutone/pickles/'
 
-    saver = tf.train.Saver()
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
+    checkpoint = tf.train.Checkpoint(variables=[model])
+    with tf.compat.v1.Session() as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
+        sess.run(tf.compat.v1.local_variables_initializer())
 
-        saver.restore(sess, PATH)
+        checkpoint.restore(PATH)
         print("load model from:", PATH)
 
 

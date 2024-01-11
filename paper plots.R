@@ -51,19 +51,19 @@ for (i in 1:nrow(dat)){
   print(dat[i,]$success)
   if (dat[i,]$success=="Reject"){
     #M[e_ind,d_ind]=-1
-    M[e_ind,d_ind]=paste0("Reject \n (m~",m_local,")")
+    M[e_ind,d_ind]=paste0("Rej. (m~",m_local,")")
     
   }
   if (dat[i,]$success=="Accept"){
     #M[e_ind,d_ind]=1
-    M[e_ind,d_ind]=paste0("Accept \n (m~",m_local,")")
+    M[e_ind,d_ind]=paste0("Acc. (m~",m_local,")")
   }
   if (dat[i,]$success=="N/A"){
     #M[e_ind,d_ind]=0
-    M[e_ind,d_ind]=paste0("N/A \n (m~", m_local,")")
+    M[e_ind,d_ind]=paste0("N/A (m~", m_local,")")
   }
 }
-kable(M, "latex")
+# kable(M, "latex")
 ht = as_hux(M,
             add_colnames=TRUE,
             add_rownames="epsilon \\ delta",
@@ -71,14 +71,14 @@ ht = as_hux(M,
             caption = "Hello"
             )
 width(ht) <- 1
-set_caption(ht, "Adversarially Retrained Model Monotonicity")
+set_caption(ht, "Monotonicity Test for Monotonic Model")
 
 for (i in 1:nrow(M)+1){
   for (j in 1:ncol(M)+1){
-    if (grepl("Accept",ht[i,j])){
+    if (grepl("Acc",ht[i,j])){
       ht=set_background_color(ht, i,j, "green")
     }
-    if (grepl("Reject",ht[i,j])){
+    if (grepl("Rej",ht[i,j])){
       ht=set_background_color(ht, i,j, "red")
     }
     if (grepl("N/A",ht[i,j])){
