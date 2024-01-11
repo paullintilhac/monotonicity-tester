@@ -26,7 +26,7 @@ df2$thresh = df2$eps - sqrt((1/(2*df2$m))*log(1/df2$delta))
 df2$ratio = 1/df2$thresh
 head(df2[df2$thresh>0,])
 
-file = "~/code/pdfclassifier/train/monotonic.csv"
+file = "~/code/pdfclassifier/train/train_adv_combine_centered_path.csv"
 dat = read.csv(file)
 eps = unique(dat$epsilon)
 delta = unique(dat$delta)
@@ -51,16 +51,19 @@ for (i in 1:nrow(dat)){
   print(dat[i,]$success)
   if (dat[i,]$success=="Reject"){
     #M[e_ind,d_ind]=-1
-    M[e_ind,d_ind]=paste0("Rej. (m~",m_local,")")
+    #M[e_ind,d_ind]=paste0("Rej. (m~",m_local,")")
+    M[e_ind,d_ind]=paste0("Reject")
     
   }
   if (dat[i,]$success=="Accept"){
     #M[e_ind,d_ind]=1
-    M[e_ind,d_ind]=paste0("Acc. (m~",m_local,")")
+    #M[e_ind,d_ind]=paste0("Accept (m~",m_local,")")
+    M[e_ind,d_ind]=paste0("Accept")
   }
   if (dat[i,]$success=="N/A"){
     #M[e_ind,d_ind]=0
     M[e_ind,d_ind]=paste0("N/A (m~", m_local,")")
+    M[e_ind,d_ind]=paste0("N/A")
   }
 }
 # kable(M, "latex")
@@ -70,7 +73,7 @@ ht = as_hux(M,
             autoformat = getOption("huxtable.autoformat", TRUE),
             caption = "Hello"
             )
-width(ht) <- 1
+width(ht) <- .4
 set_caption(ht, "Monotonicity Test for Monotonic Model")
 
 for (i in 1:nrow(M)+1){

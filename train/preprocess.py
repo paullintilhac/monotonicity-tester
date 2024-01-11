@@ -11,17 +11,21 @@ import xgboost as xgb
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
 print("tensorflow version: " + str(tf.__version__))
+#D = "within"
+#D = "centered_in"
 D = "uniform"
+
 batch_size = 50
-#filename="monotonic"
-filename = "train_adv_combine"
-# filename = "train"
-maxM = 100000
+# filename="monotonic"
+# filename = "robust_monotonic"
+filename = "robust_combine_three"
+#filename = "train_adv_combine"
+maxM = 10000000
 path = True
-#eps = [.15]
-#delta = [.3]
-eps = [.001,.01,.05,.1, .15]
-delta = [.001,.01,.05,.15,.3]
+#eps = [.4]
+#delta = [.4]
+eps = [.01,.05,.1, .4]
+delta = [.01,.05,.15,.4]
 
 # Load HIDOST training dataset
 test_data = '../data/traintest_all_500test/test_data.libsvm'
@@ -45,6 +49,10 @@ with tf.Session() as sess:
         PATH = "../models/adv_trained/baseline_adv_combine_two.ckpt"
     if filename=="baseline":
         PATH = "../models/adv_trained/baseline_checkpoint.ckpt"
+    if filename=="robust_monotonic":
+        PATH="../models/adv_trained/robust_monotonic.ckpt"
+    if filename=="robust_combine_three":
+        PATH="../models/adv_trained/robust_combine_three.ckpt"
     if filename!="monotonic":
         saver.restore(sess, PATH)
         sess.run(tf.global_variables_initializer())
@@ -64,10 +72,14 @@ with tf.Session() as sess:
     #delta = [.9]
 
     p = np.floor(np.log2(np.sqrt(n_features/np.log2(n_features))))
-
+    tau_max = 2**p
+    print("tau_max: " + str(tau_max))
+    
     def mutate(x,y,k=1,path=False):
         #if using path-connected neighbor for mutations, 
         #find some tau-sized subset of 0 coordinates to increment
+        xCopy=x.copy()
+
         if path:
             k = random.randint(1,p)
             tau = 2**k
@@ -76,19 +88,17 @@ with tf.Session() as sess:
             np.random.shuffle(zeroInds)
             zeroInds = zeroInds[:tau]
             #print("zeroInds: " + str(zeroInds))
-            xCopy=x.copy()
             xCopy[zeroInds]=1
             #print("sum x:" + str(sum(x)) + ", sum xCopy: " + str(sum(xCopy)))
-            return xCopy
         #if edge test, simply find a hamming neighbor
         #only increment in the direction that could possibly cause non-monotonicity
         else:
             for i in range(k):
                 inds = np.where(x==1-y)[0]
                 newInd = random.choice(inds)
-                x[newInd]=1-x[newInd]
-            return x
-
+                xCopy[newInd]=1-xCopy[newInd]
+        return xCopy
+        
 
     def testBatch(x,xgb_mod=None,cap=None,centered=True,path=False):
         if not cap:
@@ -99,7 +109,7 @@ with tf.Session() as sess:
         x = x[:cap]
         xNew = []
         x_mutated = []
-        print("x len: " + str(len(x)))
+        y_mutated = []
         # for the within strategy, which selects existing neighbors 
         # from our valid set (usually test data)
         if not centered:
@@ -113,6 +123,7 @@ with tf.Session() as sess:
                     count+=1
                     x2 = x[j]
                     #if using edge test, search for comparable neighboring points
+
                     if not path:
                         x1 = x1.astype(bool)
                         x2 = x2.astype(bool)
@@ -125,9 +136,13 @@ with tf.Session() as sess:
                         diffVec = x1-x2
                         maxDiff = np.max(diffVec)
                         minDiff = np.min(diffVec)
-                        if (maxDiff>0 and minDiff==0) or (maxDiff==0 and minDiff<0):
-                            xNew.append(x1.astype(int))
-                            x_mutated.append(x2.astype(int))
+                        if ((maxDiff>0 and minDiff==0) or (maxDiff==0 and minDiff<0)):
+                            x1 = x1.astype(bool)
+                            x2 = x2.astype(bool)
+                            xorsum = np.sum(np.bitwise_xor(x1, x2))
+                            if xorsum<tau_max:
+                                xNew.append(x1.astype(int))
+                                x_mutated.append(x2.astype(int))
                             
                     if len(x_mutated)==cap:
                         reachedCap = True
@@ -138,9 +153,23 @@ with tf.Session() as sess:
             if not reachedCap:
                 print("ran out of examples using within-distribution strategy, setting result to N/A")
                 return "N/A"
+            if xgb_mod:
+                dtest = xgb.DMatrix(xNew)
+                preds = xgb_model.predict(dtest)
+                y = [1 if p > 0.5 else 0 for p in preds]
+                dmutated = xgb.DMatrix(x_mutated)
+                mutated_preds = xgb_mod.predict(dmutated)
+                y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
+            else:
+                y = sess.run(model.y_pred,\
+                        feed_dict={model.x_input:xNew
+                })
+                y_mutated = sess.run(model.y_pred,\
+                        feed_dict={model.x_input:x_mutated.copy()
+                })
+           
         # this code block for the uniform and centered-in strategy, which both use "mutations"
         else:
-            print("Using centered mutation strategy for generating pairs")
             xNew = x.copy()
             if xgb_mod:
                 dtest = xgb.DMatrix(xNew)
@@ -160,10 +189,8 @@ with tf.Session() as sess:
                 y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
             else:
                 y_mutated = sess.run(model.y_pred,\
-                        feed_dict={model.x_input:x_mutated.copy(),\
-                                model.y_input:y_test[:cap]
-
-                })        
+                        feed_dict={model.x_input:x_mutated.copy()
+                })
         maxRows = 0
         for i in range(len(x_mutated)):
             #print("sum xNew: " + str(sum(xNew[i])) + ", sum x_mutated: " + str(sum(x_mutated[i])))
@@ -186,11 +213,16 @@ with tf.Session() as sess:
         for e in eps:
             for d in delta:
                 np.random.shuffle(x_test)
-                
+                small_m = int(np.ceil(np.log(1/d)/np.log(np.sqrt(n_features)/(np.sqrt(n_features)-(e**2)))))
+                big_m=int(np.ceil(np.log(1/d)/np.log(n_features/(n_features-e))))
+                print("small_m: " + str(small_m) + ", big_m: " + str(big_m))
                 if path:
-                    m = int(np.ceil(np.log(1/d)/np.log(np.sqrt(n_features)/(np.sqrt(n_features)-(e**2)))))
+                    print("goin with small m")
+                    m=small_m
                 else:
-                    m=int(np.ceil(np.log(1/d)/np.log(n_features/(n_features-e))))
+                    print("going with big m")
+                    m=big_m
+
 
                 print("delta: " + str(d)+ ", epsilon: " + str(e) + ", m: " + str(m))
                 

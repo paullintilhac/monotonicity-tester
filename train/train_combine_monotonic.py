@@ -272,8 +272,8 @@ def shuffle_data(x, y):
     return x_shuffle, y_shuffle
 
 def generate_intervals(feat, spec):
-    seed_dict = pickle.load(open(feat, 'rb'))
-    exploit_spec = pickle.load(open(spec, 'rb'))
+    seed_dict = pickle.load(open(feat, 'rb'),encoding='latin1')
+    exploit_spec = pickle.load(open(spec, 'rb'),encoding='latin1')
     x_input = []
     for seed_sha1, exploit_paths in exploit_spec.items():
         if exploit_paths is None:
@@ -336,42 +336,42 @@ def adv_train(model, train_interval_path, model_name):
     print('Loading the insertion training interval datasets...')
     pickle_dir = args.train
     print("pickle_dir: " + str(pickle_dir))
-    ins_x_input = pickle.load(open(os.path.join(pickle_dir, 'x_input.pickle'), 'rb'))
+    ins_x_input = pickle.load(open(os.path.join(pickle_dir, 'x_input.pickle'), 'rb'),encoding='latin1')
     if type(ins_x_input[0]) == scipy.sparse.csr.csr_matrix:
         ins_x_input = np.array([item.toarray()[0] for item in ins_x_input])
-    ins_y_input = pickle.load(open(os.path.join(pickle_dir, 'y_input.pickle'), 'rb'))
-    ins_vectors_all = pickle.load(open(os.path.join(pickle_dir, 'vectors_all.pickle'), "rb"))
+    ins_y_input = pickle.load(open(os.path.join(pickle_dir, 'y_input.pickle'), 'rb'),encoding='latin1')
+    ins_vectors_all = pickle.load(open(os.path.join(pickle_dir, 'vectors_all.pickle'), "rb"),encoding='latin1')
 
     print(ins_x_input.shape)
 
     # Load the test data
     print('Loading the insertion testing interval datasets...')
     test_pickle_dir = 'robustness_spec/seed_test_malicious/mutate_insert_rootany/pickles/'
-    ins_x_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'x_input.pickle'), 'rb'))
+    ins_x_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'x_input.pickle'), 'rb'),encoding='latin1')
     if type(ins_x_input_test[0]) == scipy.sparse.csr.csr_matrix:
         ins_x_input_test = np.array([item.toarray()[0] for item in ins_x_input_test])
-    ins_y_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'y_input.pickle'), 'rb'))
-    ins_splits_test = pickle.load(open(os.path.join(test_pickle_dir, 'splits.pickle'), 'rb'))
-    ins_vectors_all_test = pickle.load(open(os.path.join(test_pickle_dir, 'vectors_all.pickle'), "rb"))
+    ins_y_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'y_input.pickle'), 'rb'),encoding='latin1')
+    ins_splits_test = pickle.load(open(os.path.join(test_pickle_dir, 'splits.pickle'), 'rb'),encoding='latin1')
+    ins_vectors_all_test = pickle.load(open(os.path.join(test_pickle_dir, 'vectors_all.pickle'), "rb"),encoding='latin1')
 
     print(ins_x_input_test.shape)
 
     print('Loading the deletion training interval datasets...')
     pickle_dir = 'robustness_spec/seed_train_malicious/mutate_delete_one/pickles/'
-    del_x_input = pickle.load(open(os.path.join(pickle_dir, 'x_input.pickle'), 'rb'))
+    del_x_input = pickle.load(open(os.path.join(pickle_dir, 'x_input.pickle'), 'rb'),encoding='latin1')
     if type(del_x_input[0]) == scipy.sparse.csr.csr_matrix:
         del_x_input = np.array([item.toarray()[0] for item in del_x_input])
-    del_y_input = pickle.load(open(os.path.join(pickle_dir, 'y_input.pickle'), 'rb'))
-    del_vectors_all = pickle.load(open(os.path.join(pickle_dir, 'vectors_all.pickle'), "rb"))
+    del_y_input = pickle.load(open(os.path.join(pickle_dir, 'y_input.pickle'), 'rb'),encoding='latin1')
+    del_vectors_all = pickle.load(open(os.path.join(pickle_dir, 'vectors_all.pickle'), "rb"),encoding='latin1')
 
     print('Loading the deletion testing interval datasets...')
     test_pickle_dir = 'robustness_spec/seed_test_malicious/mutate_delete_one/pickles/'
-    del_x_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'x_input.pickle'), 'rb'))
+    del_x_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'x_input.pickle'), 'rb'),encoding='latin1')
     if type(del_x_input_test[0]) == scipy.sparse.csr.csr_matrix:
         del_x_input_test = np.array([item.toarray()[0] for item in del_x_input_test])
-    del_y_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'y_input.pickle'), 'rb'))
-    del_splits_test = pickle.load(open(os.path.join(test_pickle_dir, 'splits.pickle'), 'rb'))
-    del_vectors_all_test = pickle.load(open(os.path.join(test_pickle_dir, 'vectors_all.pickle'), "rb"))
+    del_y_input_test = pickle.load(open(os.path.join(test_pickle_dir, 'y_input.pickle'), 'rb'),encoding='latin1')
+    del_splits_test = pickle.load(open(os.path.join(test_pickle_dir, 'splits.pickle'), 'rb'),encoding='latin1')
+    del_vectors_all_test = pickle.load(open(os.path.join(test_pickle_dir, 'vectors_all.pickle'), "rb"),encoding='latin1')
 
     # generate training and testing intervals
     print('Generating the monotonic interval datasets')
@@ -417,10 +417,10 @@ def adv_train(model, train_interval_path, model_name):
             k = 0
             # robust monotonic training index
             m = 0
-            b1 = len(x_train)/batch_size+1
-            b2 = len(ins_x_input)/batch_size+1
-            b3 = len(del_x_input)/batch_size+1
-            b4 = len(m_x_input)/batch_size+1
+            b1 = len(x_train)//batch_size+1
+            b2 = len(ins_x_input)//batch_size+1
+            b3 = len(del_x_input)//batch_size+1
+            b4 = len(m_x_input)//batch_size+1
             robust_train_batch = [0 for s in range(b1)] + [1 for s in range(b2)] + [2 for s in range(b3)] + [3 for t in range(b4)]
             print('regular batches:', b1, 'insertion batches:', b2, 'deletion batches:', b3, 'monotonic batches:', b4)
             print('total batches to run each epoch:', len(robust_train_batch))
