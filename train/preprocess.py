@@ -6,22 +6,32 @@ from model import Model
 import random
 import csv
 import math
+import argparse
 import xgboost as xgb
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
 print("tensorflow version: " + str(tf.__version__))
-#D = "within"
-#D = "centered_in"
-D = "uniform"
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
+    parser.add_argument('--model_name', type=str, help='Load checkpoint from \{monotonic|robust|robust_combine_three|train_adv_combine\} model.',required=True)
+    parser.add_argument('-D', type=str, help='Use \{uniform|centered|empirical\} strategy for pair selection.', required=True)    
+    parser.add_argument('--edge', action='store_true', default=False)
+    parser.add_argument('--maxM', type=int, default=10000000)
+
+
+    return parser.parse_args()
+
+args = parse_args()
+path = not args.edge
+D = args.D
+maxM = args.maxM
+filename = args.model_name
 
 batch_size = 50
-# filename="monotonic"
-# filename = "robust_monotonic"
-filename = "robust_combine_three"
-#filename = "train_adv_combine"
 maxM = 10000000
-path = True
 #eps = [.4]
 #delta = [.4]
 eps = [.01,.05,.1, .4]
@@ -110,7 +120,7 @@ with tf.Session() as sess:
         xNew = []
         x_mutated = []
         y_mutated = []
-        # for the within strategy, which selects existing neighbors 
+        # for the empirical strategy, which selects existing neighbors 
         # from our valid set (usually test data)
         if not centered:
             # print("y_p up top: " + str(y_p))
@@ -151,7 +161,7 @@ with tf.Session() as sess:
                 if reachedCap:
                     break
             if not reachedCap:
-                print("ran out of examples using within-distribution strategy, setting result to N/A")
+                print("ran out of examples using empirical-distribution strategy, setting result to N/A")
                 return "N/A"
             if xgb_mod:
                 dtest = xgb.DMatrix(xNew)
@@ -237,13 +247,13 @@ with tf.Session() as sess:
                 remainderRound = m%len(x_test)
                     # print("maxM: " + str(maxM) + ", len(x_test): " + str(len(x_test)) + ", numRounds: " + str(numRounds) + ", remainder: " + str(remainderRound)) 
                 
-                if D=="within":
+                if D=="empirical":
                     success = testBatch(x_test,cap=m,xgb_mod=xgb_model,centered=False,path =path)
                 else:
                     maxRounds = 0
                     for r in range(numRounds):
                         print("progress: " + str(float(r)/float(numRounds)))
-                        if D=="centered_in":
+                        if D=="centered":
                             x_input = x_test
                         elif D=="uniform":
                             x_input = [np.random.randint(2,size=n_features) for _ in range(len(x_test))]                           
@@ -254,7 +264,7 @@ with tf.Session() as sess:
                             break
                     if success == "Accept":
                         maxRounds = numRounds
-                    if D=="centered_in":
+                    if D=="centered":
                         x_input = x_test
                     elif D=="uniform":
                         x_input = [np.random.randint(2,size=n_features) for _ in range(len(x_test))]
