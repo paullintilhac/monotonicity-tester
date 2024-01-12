@@ -7,16 +7,18 @@ import random
 import csv
 import math
 import argparse
+import tqdm
 import xgboost as xgb
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
 print("tensorflow version: " + str(tf.__version__))
-
+gpus = tf.config.list_physical_devices('GPU')
+print("using GPU? " + str(gpus))
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
-    parser.add_argument('--model_name', type=str, help='Load checkpoint from \{monotonic|robust|robust_combine_three|train_adv_combine\} model.',required=True)
+    parser.add_argument('--model_name', type=str, help='Load checkpoint from \{monotonic|robust_monotonic|robust_combine_three|train_adv_combine\} model.',required=True)
     parser.add_argument('-D', type=str, help='Use \{uniform|centered|empirical\} strategy for pair selection.', required=True)    
     parser.add_argument('--edge', action='store_true', default=False)
     parser.add_argument('--maxM', type=int, default=10000000)
@@ -58,11 +60,14 @@ with tf.Session() as sess:
     if filename=="train_adv_combine":
         PATH = "../models/adv_trained/baseline_adv_combine_two.ckpt"
     if filename=="baseline":
-        PATH = "../models/adv_trained/baseline_checkpoint.ckpt"
+        PATH = "../models/adv_trained/test_model_name.ckpt"
     if filename=="robust_monotonic":
         PATH="../models/adv_trained/robust_monotonic.ckpt"
     if filename=="robust_combine_three":
         PATH="../models/adv_trained/robust_combine_three.ckpt"
+    if filename=="robust_combine_two":
+        PATH="../models/adv_trained/robust_combine_two.ckpt"
+
     if filename!="monotonic":
         saver.restore(sess, PATH)
         sess.run(tf.global_variables_initializer())
@@ -132,7 +137,7 @@ with tf.Session() as sess:
                 print("ran out of examples using empirical-distribution strategy, setting result to N/A")
                 return "N/A"
 
-            for i in range(len(x)):
+            for i in tqdm(range(len(x)), desc="Finding Pairs within distribution"):
                 x1 = x[i]
                 for j in range(i):
                     count+=1
@@ -220,7 +225,7 @@ with tf.Session() as sess:
                 return "Reject"
         return "Accept"
     pathString = "" if path else "_edge"
-    with open(filename+"_"+D+pathString+'.csv', 'w', newline='') as file:
+    with open("tests/"+filename+"_"+D+pathString+'.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["epsilon", "delta","success"])
         

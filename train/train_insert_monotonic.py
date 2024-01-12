@@ -19,6 +19,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
     # generate monotonic intervals from seed_feat
     parser.add_argument('--model_name', type=str, help='Save to this model.', default='test_model_name')
+    parser.add_argument('--train', type=str, help='Training insertion interval data.')
     parser.add_argument('--resume', action='store_true', default=False)
     parser.add_argument('--evaluate', action='store_true', default=False)
     parser.add_argument('--batch_size', type=int, default=50)
@@ -322,7 +323,6 @@ def adv_train(model, model_name):
             j = 0
             # robust training index
             i = 0
-            print("len(x_train): " + str(len(x_train)) + ", batch_size:  " + str(batch_size))
             robust_train_batch = [False for k in range(len(x_train)//batch_size+1)] + [True for k in range(len(x_input)//batch_size+1)]
             b1 = len(x_train)/batch_size+1
             b2 = len(x_input)/batch_size+1

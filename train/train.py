@@ -31,6 +31,13 @@ def parse_args():
     parser.add_argument('--portion', type=float, default=3)
     return parser.parse_args()
 
+def mutate(x,y,k=1):
+            inds = np.where(x==1-y)[0]
+            for i in range(k):
+                newInd = random.choice(inds)
+                x[newInd]=1-x[newInd]
+            return x
+
 def perf_measure(y_actual, y_hat):
     TP = 0
     FP = 0
@@ -136,13 +143,6 @@ def train(model):
                 if(epoch != 0 and epoch%20==0):
                     test_acc, test_fpr = eval(x_test, y_test, sess, model)
                     print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
-
-        def mutate(x,y,k=1):
-            inds = np.where(x==1-y)[0]
-            for i in range(k):
-                newInd = random.choice(inds)
-                x[newInd]=1-x[newInd]
-            return x
 
         print("about to write mutated data and predictions...")
         print('======= DONE =======')

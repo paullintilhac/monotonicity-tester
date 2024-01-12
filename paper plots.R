@@ -3,6 +3,7 @@ library(lattice)
 library(gplots)
 library(kableExtra)
 library(huxtable)
+if (FALSE){
 eps = seq(.01,.15,by=.02)
 delta = seq(.002,.01,by=.002)
 df <- expand.grid(eps, delta)
@@ -25,69 +26,103 @@ df2$diff = sqrt((1/(2*df2$m))*log(1/df2$delta))
 df2$thresh = df2$eps - sqrt((1/(2*df2$m))*log(1/df2$delta))
 df2$ratio = 1/df2$thresh
 head(df2[df2$thresh>0,])
-
-file = "~/code/pdfclassifier/train/robust_combine_three_uniform.csv"
-dat = read.csv(file)
-eps = unique(dat$epsilon)
-delta = unique(dat$delta)
-n_e = length(eps)
-n_d = length(delta)
-#M = matrix(0,ncol = n_d,nrow=n_e)
-M = matrix(NA,ncol = n_d,nrow=n_e)
-
-row.names(M)=eps
-colnames(M)=delta
-n = 3514
-
-for (i in 1:nrow(dat)){
-  e_ind = which(eps==dat[i,]$epsilon)
-  d_ind = which(delta==dat[i,]$delta)
-  e = dat[i,]$epsilon
-  d = dat[i,]$delta
-  m_local = log(1/d)/log(n/(n-e))
-  m_local = formatC(m_local, format = "e", digits = 0)
-
-  print("success")
-  print(dat[i,]$success)
-  if (dat[i,]$success=="Reject"){
-    #M[e_ind,d_ind]=-1
-    #M[e_ind,d_ind]=paste0("Rej. (m~",m_local,")")
-    M[e_ind,d_ind]=paste0("Reject")
-    
-  }
-  if (dat[i,]$success=="Accept"){
-    #M[e_ind,d_ind]=1
-    #M[e_ind,d_ind]=paste0("Accept (m~",m_local,")")
-    M[e_ind,d_ind]=paste0("Accept")
-  }
-  if (dat[i,]$success=="N/A"){
-    #M[e_ind,d_ind]=0
-    M[e_ind,d_ind]=paste0("N/A (m~", m_local,")")
-    M[e_ind,d_ind]=paste0("N/A")
-  }
 }
-# kable(M, "latex")
-ht = as_hux(M,
-            add_colnames=TRUE,
-            add_rownames="epsilon \\ delta",
-            autoformat = getOption("huxtable.autoformat", TRUE),
-            caption = "Hello"
-            )
-width(ht) <- .6
-set_caption(ht, "Monotonicity Test for Monotonic Model")
 
-for (i in 1:nrow(M)+1){
-  for (j in 1:ncol(M)+1){
-    if (grepl("Acc",ht[i,j])){
-      ht=set_background_color(ht, i,j, "green")
+model_names = c("monotonic",
+                "robust_monotonic",
+                "robust_combine_two",
+                "robust_combine_three",
+                "train_adv_combine",
+                "baseline")
+verbose_names = c("Monotonic XgBoost Model",
+                  "Verifiably Robust (D)",
+                  "Verifiably Robust (A+B)",
+                  "Verifiably Robust (A+B+E)",
+                  "Adversarially Trained (A+B)",
+                  "Baseline Neural Network")
+edgeOptions=c("_edge","")
+distOptions = c("_uniform","_centered","_empirical")
+grid = expand.grid(model_names,distOptions,edgeOptions)
+grid$filename = paste0(grid$Var1,grid$Var2,grid$Var3)
+grid$filepath =paste0("~/code/pdfclassifier/train/",grid$filename,".csv")
+grid$pathString = ifelse(grid$Var3=="_edge","Edge Test, ","Path Test, ")
+grid$distString = ""
+
+grid[grid$Var2=="_uniform",]$distString = "Uniform Distribution"
+grid[grid$Var2=="_centered",]$distString = "Centered Distribution"
+grid[grid$Var2=="_empirical",]$distString = "Empirical Distribution"
+grid$caption = paste0(verbose_names,": ",grid$pathString,grid$distString)
+filenames = unique(grid$filename)
+filepaths = unique(grid$filepath)
+captions = unique(grid$caption)
+
+if (length(filenames)!=length(captions)){
+  print("STOP!!")
+}
+for (i in 1:length(filenames)){
+  file=filepaths[i]
+  caption = captions[i]
+  dat = read.csv(file)
+  eps = unique(dat$epsilon)
+  delta = unique(dat$delta)
+  n_e = length(eps)
+  n_d = length(delta)
+  #M = matrix(0,ncol = n_d,nrow=n_e)
+  M = matrix(NA,ncol = n_d,nrow=n_e)
+  
+  row.names(M)=eps
+  colnames(M)=delta
+  n = 3514
+  
+  for (i in 1:nrow(dat)){
+    e_ind = which(eps==dat[i,]$epsilon)
+    d_ind = which(delta==dat[i,]$delta)
+    e = dat[i,]$epsilon
+    d = dat[i,]$delta
+    m_local = log(1/d)/log(n/(n-e))
+    m_local = formatC(m_local, format = "e", digits = 0)
+  
+    print("success")
+    print(dat[i,]$success)
+    if (dat[i,]$success=="Reject"){
+      #M[e_ind,d_ind]=-1
+      #M[e_ind,d_ind]=paste0("Rej. (m~",m_local,")")
+      M[e_ind,d_ind]=paste0("Reject")
+      
     }
-    if (grepl("Rej",ht[i,j])){
-      ht=set_background_color(ht, i,j, "red")
+    if (dat[i,]$success=="Accept"){
+      #M[e_ind,d_ind]=1
+      #M[e_ind,d_ind]=paste0("Accept (m~",m_local,")")
+      M[e_ind,d_ind]=paste0("Accept")
     }
-    if (grepl("N/A",ht[i,j])){
-      ht=set_background_color(ht, i,j, "gray")
+    if (dat[i,]$success=="N/A"){
+      #M[e_ind,d_ind]=0
+      M[e_ind,d_ind]=paste0("N/A (m~", m_local,")")
+      M[e_ind,d_ind]=paste0("N/A")
     }
   }
+  # kable(M, "latex")
+  ht = as_hux(M,
+              add_colnames=TRUE,
+              add_rownames="\\epsilon \\ \\delta",
+              autoformat = getOption("huxtable.autoformat", TRUE),
+              )
+  width(ht) <- .7
+  ht = set_caption(ht, caption)
+  ht = set_escape_contents(ht,FALSE)
+  for (i in 1:nrow(M)+1){
+    for (j in 1:ncol(M)+1){
+      if (grepl("Acc",ht[i,j])){
+        ht=set_background_color(ht, i,j, "green")
+      }
+      if (grepl("Rej",ht[i,j])){
+        ht=set_background_color(ht, i,j, "red")
+      }
+      if (grepl("N/A",ht[i,j])){
+        ht=set_background_color(ht, i,j, "gray")
+      }
+    }
+  }
+  cat(print_latex(ht), file = '~/code/pdfclassifier/train/output.tex')
+  #heatmap.2(M,Rowv=FALSE, Colv=FALSE,na.color = "gray",dendrogram='none', "Adversarially Retrained Model Monotonicity")
 }
-print_latex(ht)
-heatmap.2(M,Rowv=FALSE, Colv=FALSE,na.color = "gray",dendrogram='none', "Adversarially Retrained Model Monotonicity")
