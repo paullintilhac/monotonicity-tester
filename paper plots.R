@@ -44,7 +44,7 @@ edgeOptions=c("_edge","")
 distOptions = c("_uniform","_centered","_empirical")
 grid = expand.grid(model_names,distOptions,edgeOptions)
 grid$filename = paste0(grid$Var1,grid$Var2,grid$Var3)
-grid$filepath =paste0("~/code/pdfclassifier/train/",grid$filename,".csv")
+grid$filepath =paste0("~/code/pdfclassifier/train/tests/",grid$filename,".csv")
 grid$pathString = ifelse(grid$Var3=="_edge","Edge Test, ","Path Test, ")
 grid$distString = ""
 
@@ -123,6 +123,6 @@ for (i in 1:length(filenames)){
       }
     }
   }
-  cat(print_latex(ht), file = '~/code/pdfclassifier/train/output.tex')
+  capture.output(print_latex(ht), file = '~/code/pdfclassifier/train/table.tex',append=TRUE)
   #heatmap.2(M,Rowv=FALSE, Colv=FALSE,na.color = "gray",dendrogram='none', "Adversarially Retrained Model Monotonicity")
 }

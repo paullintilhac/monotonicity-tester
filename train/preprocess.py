@@ -7,7 +7,7 @@ import random
 import csv
 import math
 import argparse
-import tqdm
+from tqdm import tqdm
 import xgboost as xgb
 
 tf.disable_eager_execution()
