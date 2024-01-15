@@ -7,16 +7,18 @@ import random
 import csv
 import math
 import argparse
+from tqdm import tqdm
 import xgboost as xgb
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
 print("tensorflow version: " + str(tf.__version__))
-
+gpus = tf.config.list_physical_devices('GPU')
+print("using GPU? " + str(gpus))
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
-    parser.add_argument('--model_name', type=str, help='Load checkpoint from \{monotonic|robust|robust_combine_three|train_adv_combine\} model.',required=True)
+    parser.add_argument('--model_name', type=str, help='Load checkpoint from \{monotonic|robust_monotonic|robust_combine_three|train_adv_combine\} model.',required=True)
     parser.add_argument('-D', type=str, help='Use \{uniform|centered|empirical\} strategy for pair selection.', required=True)    
     parser.add_argument('--edge', action='store_true', default=False)
     parser.add_argument('--maxM', type=int, default=10000000)
@@ -34,8 +36,8 @@ batch_size = 50
 maxM = 10000000
 #eps = [.4]
 #delta = [.4]
-eps = [.01,.05,.1, .4]
-delta = [.01,.05,.15,.4]
+eps = [.01,.1,.5,.9]
+delta = [.01,.1,.5,.9]
 
 # Load HIDOST training dataset
 test_data = '../data/traintest_all_500test/test_data.libsvm'
@@ -58,11 +60,14 @@ with tf.Session() as sess:
     if filename=="train_adv_combine":
         PATH = "../models/adv_trained/baseline_adv_combine_two.ckpt"
     if filename=="baseline":
-        PATH = "../models/adv_trained/baseline_checkpoint.ckpt"
+        PATH = "../models/adv_trained/test_model_name.ckpt"
     if filename=="robust_monotonic":
         PATH="../models/adv_trained/robust_monotonic.ckpt"
     if filename=="robust_combine_three":
         PATH="../models/adv_trained/robust_combine_three.ckpt"
+    if filename=="robust_combine_two":
+        PATH="../models/adv_trained/robust_combine_two.ckpt"
+
     if filename!="monotonic":
         saver.restore(sess, PATH)
         sess.run(tf.global_variables_initializer())
@@ -111,12 +116,12 @@ with tf.Session() as sess:
         
 
     def testBatch(x,xgb_mod=None,cap=None,centered=True,path=False):
+        
         if not cap:
             cap=len(x_test)
         if not sess and not xgb_mod:
             print("NEED EITHER THE MONOTONIC MODEL OR NN")
             return   
-        x = x[:cap]
         xNew = []
         x_mutated = []
         y_mutated = []
@@ -127,7 +132,12 @@ with tf.Session() as sess:
             num_total = math.comb(len(x),2)
             count=0
             reachedCap = False
-            for i in range(len(x)):
+            print("cap: " + str(cap) + ", len(x): " + str(len(x)))
+            if (cap>22000):
+                print("ran out of examples using empirical-distribution strategy, setting result to N/A")
+                return "N/A"
+
+            for i in tqdm(range(len(x)), desc="Finding Pairs within distribution"):
                 x1 = x[i]
                 for j in range(i):
                     count+=1
@@ -160,9 +170,7 @@ with tf.Session() as sess:
                 # print("progress: " + str(float(count)/float(num_total)))
                 if reachedCap:
                     break
-            if not reachedCap:
-                print("ran out of examples using empirical-distribution strategy, setting result to N/A")
-                return "N/A"
+            print("len xNew: " + str(len(xNew)))
             if xgb_mod:
                 dtest = xgb.DMatrix(xNew)
                 preds = xgb_model.predict(dtest)
@@ -181,6 +189,8 @@ with tf.Session() as sess:
         # this code block for the uniform and centered-in strategy, which both use "mutations"
         else:
             xNew = x.copy()
+            xNew = xNew[:cap]
+
             if xgb_mod:
                 dtest = xgb.DMatrix(xNew)
                 preds = xgb_model.predict(dtest)
@@ -214,8 +224,8 @@ with tf.Session() as sess:
                 print("HIT TEST FAILURE ON ROW " + str(i)+", sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
                 return "Reject"
         return "Accept"
-
-    with open(filename+'.csv', 'w', newline='') as file:
+    pathString = "" if path else "_edge"
+    with open("tests/"+filename+"_"+D+pathString+'.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["epsilon", "delta","success"])
         
@@ -251,7 +261,7 @@ with tf.Session() as sess:
                     success = testBatch(x_test,cap=m,xgb_mod=xgb_model,centered=False,path =path)
                 else:
                     maxRounds = 0
-                    for r in range(numRounds):
+                    for r in tqdm(range(numRounds),desc = "Generating mutations and evaluating in batches of size " + str(len(x_test))):
                         print("progress: " + str(float(r)/float(numRounds)))
                         if D=="centered":
                             x_input = x_test
