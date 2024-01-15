@@ -42,26 +42,26 @@ verbose_names = c("Monotonic XgBoost Model",
                   "Baseline Neural Network")
 edgeOptions=c("_edge","")
 distOptions = c("_uniform","_centered","_empirical")
-grid = expand.grid(model_names,distOptions,edgeOptions)
-grid$filename = paste0(grid$Var1,grid$Var2,grid$Var3)
+grid = expand.grid(distOptions,edgeOptions,model_names)
+grid$filename = paste0(grid$Var3,grid$Var1,grid$Var2)
 grid$filepath =paste0("~/code/pdfclassifier/train/tests/",grid$filename,".csv")
-grid$pathString = ifelse(grid$Var3=="_edge","Edge Test, ","Path Test, ")
+grid$pathString = ifelse(grid$Var2=="_edge","Edge Test, ","Path Test, ")
 grid$distString = ""
 
-grid[grid$Var2=="_uniform",]$distString = "Uniform Distribution"
-grid[grid$Var2=="_centered",]$distString = "Centered Distribution"
-grid[grid$Var2=="_empirical",]$distString = "Empirical Distribution"
+grid[grid$Var1=="_uniform",]$distString = "Uniform Distribution"
+grid[grid$Var1=="_centered",]$distString = "Centered Distribution"
+grid[grid$Var1=="_empirical",]$distString = "Empirical Distribution"
 grid$caption = paste0(verbose_names,": ",grid$pathString,grid$distString)
-filenames = unique(grid$filename)
-filepaths = unique(grid$filepath)
-captions = unique(grid$caption)
-
-if (length(filenames)!=length(captions)){
-  print("STOP!!")
+filenames = grid$filename
+filepaths = grid$filepath
+captions = grid$caption
+for (i in 1:length(filenames)){
+  print(captions[i])
 }
 for (i in 1:length(filenames)){
   file=filepaths[i]
   caption = captions[i]
+  print(caption)
   dat = read.csv(file)
   eps = unique(dat$epsilon)
   delta = unique(dat$delta)
@@ -81,9 +81,6 @@ for (i in 1:length(filenames)){
     d = dat[i,]$delta
     m_local = log(1/d)/log(n/(n-e))
     m_local = formatC(m_local, format = "e", digits = 0)
-  
-    print("success")
-    print(dat[i,]$success)
     if (dat[i,]$success=="Reject"){
       #M[e_ind,d_ind]=-1
       #M[e_ind,d_ind]=paste0("Rej. (m~",m_local,")")
@@ -104,7 +101,7 @@ for (i in 1:length(filenames)){
   # kable(M, "latex")
   ht = as_hux(M,
               add_colnames=TRUE,
-              add_rownames="\\epsilon \\ \\delta",
+              add_rownames="\\epsilon \\hspace{4pt} $\\backslash$ \\delta",
               autoformat = getOption("huxtable.autoformat", TRUE),
               )
   width(ht) <- .7
@@ -123,6 +120,6 @@ for (i in 1:length(filenames)){
       }
     }
   }
-  capture.output(print_latex(ht), file = '~/code/pdfclassifier/train/table.tex',append=TRUE)
+  capture.output(print_latex(ht,tabular_only = F), file = '~/code/pdfclassifier/train/table.tex',append=TRUE)
   #heatmap.2(M,Rowv=FALSE, Colv=FALSE,na.color = "gray",dendrogram='none', "Adversarially Retrained Model Monotonicity")
 }

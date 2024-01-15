@@ -12,7 +12,6 @@ import random
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
-
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
     parser.add_argument('--train', type=str, help='Training interval data.')
@@ -415,42 +414,44 @@ def main(args):
     test_interval_path = args.test
 
     saver = tf.train.Saver()
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
+    with tf.device('/device:GPU:2'):
 
-        saver.restore(sess, PATH)
-        print("load model from:", PATH)
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            sess.run(tf.local_variables_initializer())
 
-        y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'))
-        splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'))
-        vectors_all_test = pickle.load(open(os.path.join(test_interval_path, 'vectors_all.pickle'), "rb"))
+            saver.restore(sess, PATH)
+            print("load model from:", PATH)
 
-        seed_dict = pickle.load(open(args.seed_feat, 'rb'))
-        exploit_spec = pickle.load(open(args.exploit_spec, 'rb'))
-        x_input_test = []
-        # the sequence depends on exploit_spec traversal
-        idx = 0
-        for seed_sha1, exploit_paths in exploit_spec.items():
-            if exploit_paths is None:
-                continue
-            try:
-                seed_feature = seed_dict[seed_sha1].toarray()[0]
-            except KeyError:
-                # this seed_fname can be parsed by pdfrw, but not hidost.
-                continue
+            y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'))
+            splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'))
+            vectors_all_test = pickle.load(open(os.path.join(test_interval_path, 'vectors_all.pickle'), "rb"))
 
-            for i in range(splits_test[idx]):
-                x_input_test.append(seed_feature)
-            idx += 1
+            seed_dict = pickle.load(open(args.seed_feat, 'rb'))
+            exploit_spec = pickle.load(open(args.exploit_spec, 'rb'))
+            x_input_test = []
+            # the sequence depends on exploit_spec traversal
+            idx = 0
+            for seed_sha1, exploit_paths in exploit_spec.items():
+                if exploit_paths is None:
+                    continue
+                try:
+                    seed_feature = seed_dict[seed_sha1].toarray()[0]
+                except KeyError:
+                    # this seed_fname can be parsed by pdfrw, but not hidost.
+                    continue
 
-        x_input_test = np.array(x_input_test)
-        print('Number of intervals for x_input_test:')
-        print(x_input_test.shape)
-        print('Evaluating VRA...')
-        # 15752 / 50.0 = 315.04
-        eval_vra(args.batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
+                for i in range(splits_test[idx]):
+                    x_input_test.append(seed_feature)
+                idx += 1
 
-if __name__=='__main__':
-    args = parse_args()
-    main(args)
+            x_input_test = np.array(x_input_test)
+            print('Number of intervals for x_input_test:')
+            print(x_input_test.shape)
+            print('Evaluating VRA...')
+            # 15752 / 50.0 = 315.04
+            eval_vra(args.batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
+
+    if __name__=='__main__':
+        args = parse_args()
+        main(args)

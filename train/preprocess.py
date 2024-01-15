@@ -261,7 +261,7 @@ with tf.Session() as sess:
                     success = testBatch(x_test,cap=m,xgb_mod=xgb_model,centered=False,path =path)
                 else:
                     maxRounds = 0
-                    for r in range(numRounds):
+                    for r in tqdm(range(numRounds),desc = "Generating mutations and evaluating in batches of size " + str(len(x_test))):
                         print("progress: " + str(float(r)/float(numRounds)))
                         if D=="centered":
                             x_input = x_test

@@ -4,7 +4,7 @@ epsilon,delta,success
 0.01,0.5,N/A
 0.01,0.9,N/A
 0.1,0.01,N/A
-0.1,0.1,Reject
+0.1,0.1,Accept
 0.1,0.5,Accept
 0.1,0.9,Accept
 0.5,0.01,Accept
