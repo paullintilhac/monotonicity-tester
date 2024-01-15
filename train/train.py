@@ -106,97 +106,98 @@ def train(model):
     x_test = x_test.toarray()
 
     saver = tf.train.Saver()
+    with tf.device('/device:GPU:2'):
 
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            sess.run(tf.local_variables_initializer())
 
-        if(args.resume):
-            saver.restore(sess, PATH)
-            print("load model from:", PATH)
-        else:
-            print("initial model as:", PATH)
+            if(args.resume):
+                saver.restore(sess, PATH)
+                print("load model from:", PATH)
+            else:
+                print("initial model as:", PATH)
 
-        j = 0
-        epoch = 0
-        for cur_batch in range(batch_num):
-            start_time = time.time()
-            x_batch = x_train[j:j+batch_size]
-            y_batch = y_train[j:j+batch_size]
-            l, acc, fpr, op = sess.run([loss, model.accuracy_op,\
-                    model.false_positive_op, optimizer_op],\
-                    feed_dict={model.x_input:x_batch,
-                        model.y_input:y_batch,
-                        learning_rate:lr}
-                                )
-            # start over.
-            j += batch_size
-            if j+batch_size > x_train.shape[0]:
-                j = 0
-                epoch += 1
-                # number of batches = epoch * (total_dataset_size / batch_sizie
-                if(epoch != 0 and epoch%10==0):
-                    lr*=args.lrdecay
-                    print("epoch:", epoch, " loss:",l, "train acc:", acc, "train fpr:", fpr, "epoch time:", time.time()-start_time)
+            j = 0
+            epoch = 0
+            for cur_batch in range(batch_num):
+                start_time = time.time()
+                x_batch = x_train[j:j+batch_size]
+                y_batch = y_train[j:j+batch_size]
+                l, acc, fpr, op = sess.run([loss, model.accuracy_op,\
+                        model.false_positive_op, optimizer_op],\
+                        feed_dict={model.x_input:x_batch,
+                            model.y_input:y_batch,
+                            learning_rate:lr}
+                                    )
+                # start over.
+                j += batch_size
+                if j+batch_size > x_train.shape[0]:
+                    j = 0
+                    epoch += 1
+                    # number of batches = epoch * (total_dataset_size / batch_sizie
+                    if(epoch != 0 and epoch%10==0):
+                        lr*=args.lrdecay
+                        print("epoch:", epoch, " loss:",l, "train acc:", acc, "train fpr:", fpr, "epoch time:", time.time()-start_time)
 
-                if(epoch != 0 and epoch%20==0):
-                    test_acc, test_fpr = eval(x_test, y_test, sess, model)
-                    print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
+                    if(epoch != 0 and epoch%20==0):
+                        test_acc, test_fpr = eval(x_test, y_test, sess, model)
+                        print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
-        print("about to write mutated data and predictions...")
-        print('======= DONE =======')
-        newX=x_test.copy()
+            print("about to write mutated data and predictions...")
+            print('======= DONE =======')
+            newX=x_test.copy()
 
-        y_p = sess.run(model.y_pred,\
-                    feed_dict={model.x_input:newX,\
-                    model.y_input:y_test
-                    })
-        
-        x_mutated = []
-        for i in range(len(x_test)):
-            x_mutated.append(mutate(newX[i],y_p[i],k=2))
+            y_p = sess.run(model.y_pred,\
+                        feed_dict={model.x_input:newX,\
+                        model.y_input:y_test
+                        })
+            
+            x_mutated = []
+            for i in range(len(x_test)):
+                x_mutated.append(mutate(newX[i],y_p[i],k=2))
 
-        y_mutated = sess.run(model.y_pred,\
-                    feed_dict={model.x_input:x_mutated,\
-                    model.y_input:y_test
-                    })
-        
-        finalArray = []
-        print("example x: " + str(x_test[0]))
-        print("example x: " + str(len(x_test[0])))
+            y_mutated = sess.run(model.y_pred,\
+                        feed_dict={model.x_input:x_mutated,\
+                        model.y_input:y_test
+                        })
+            
+            finalArray = []
+            print("example x: " + str(x_test[0]))
+            print("example x: " + str(len(x_test[0])))
 
-        for i in range(len(x_mutated)):
-            sum_orig = str(np.sum(x_test[i]))
-            sum_mutated = str(np.sum(x_mutated[i]))
-            mutated_pred = str(y_mutated[i])
-            orig_pred = str(y_p[i])
-            finalObj={
-                'sum_orig': sum_orig,
-                'sum_mutated': sum_mutated,
-                'mutated_pred': mutated_pred,
-                'orig_pred': orig_pred,
-                'x_test': x_test[i],
-                'x_mutated': x_mutated[i]
-            }
-            finalArray.append(finalObj)
-        print("writing to train.pickle...")
-        with open('train.pickle', 'wb') as handle:
-            pickle.dump(finalArray, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            for i in range(len(x_mutated)):
+                sum_orig = str(np.sum(x_test[i]))
+                sum_mutated = str(np.sum(x_mutated[i]))
+                mutated_pred = str(y_mutated[i])
+                orig_pred = str(y_p[i])
+                finalObj={
+                    'sum_orig': sum_orig,
+                    'sum_mutated': sum_mutated,
+                    'mutated_pred': mutated_pred,
+                    'orig_pred': orig_pred,
+                    'x_test': x_test[i],
+                    'x_mutated': x_mutated[i]
+                }
+                finalArray.append(finalObj)
+            print("writing to train.pickle...")
+            with open('train.pickle', 'wb') as handle:
+                pickle.dump(finalArray, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 
-        print("x_test len: " + str(len(x_test)))
-        epoch = batch_num * batch_size / x_train.shape[0]
-        print("epoch:", epoch, " loss:",l, "train acc:", acc, "epoch time:", time.time()-start_time)
+            print("x_test len: " + str(len(x_test)))
+            epoch = batch_num * batch_size / x_train.shape[0]
+            print("epoch:", epoch, " loss:",l, "train acc:", acc, "epoch time:", time.time()-start_time)
 
-        test_acc, test_fpr = eval(x_test, y_test, sess, model)
-        print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
+            test_acc, test_fpr = eval(x_test, y_test, sess, model)
+            print("epoch:", epoch, "eval test acc:", test_acc, "eval test fpr:", test_fpr)
 
-        m_acc, m_fpr = eval(x_mutated, y_test, sess, model)
-        print("======= mutated test acc:", m_acc, "test fpr:", m_fpr)
+            m_acc, m_fpr = eval(x_mutated, y_test, sess, model)
+            print("======= mutated test acc:", m_acc, "test fpr:", m_fpr)
 
-        saver.save(sess, save_path=PATH)
-        print("Model saved to", PATH)
+            saver.save(sess, save_path=PATH)
+            print("Model saved to", PATH)
 
 def eval_vra(batch_size, batch_num, x_input, y_input, vectors_all, splits, sess, model):
 
@@ -414,44 +415,43 @@ def main(args):
     test_interval_path = args.test
 
     saver = tf.train.Saver()
-    with tf.device('/device:GPU:2'):
 
-        with tf.Session() as sess:
-            sess.run(tf.global_variables_initializer())
-            sess.run(tf.local_variables_initializer())
+    with tf.Session() as sess:
+        sess.run(tf.global_variables_initializer())
+        sess.run(tf.local_variables_initializer())
 
-            saver.restore(sess, PATH)
-            print("load model from:", PATH)
+        saver.restore(sess, PATH)
+        print("load model from:", PATH)
 
-            y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'))
-            splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'))
-            vectors_all_test = pickle.load(open(os.path.join(test_interval_path, 'vectors_all.pickle'), "rb"))
+        y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'))
+        splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'))
+        vectors_all_test = pickle.load(open(os.path.join(test_interval_path, 'vectors_all.pickle'), "rb"))
 
-            seed_dict = pickle.load(open(args.seed_feat, 'rb'))
-            exploit_spec = pickle.load(open(args.exploit_spec, 'rb'))
-            x_input_test = []
-            # the sequence depends on exploit_spec traversal
-            idx = 0
-            for seed_sha1, exploit_paths in exploit_spec.items():
-                if exploit_paths is None:
-                    continue
-                try:
-                    seed_feature = seed_dict[seed_sha1].toarray()[0]
-                except KeyError:
-                    # this seed_fname can be parsed by pdfrw, but not hidost.
-                    continue
+        seed_dict = pickle.load(open(args.seed_feat, 'rb'))
+        exploit_spec = pickle.load(open(args.exploit_spec, 'rb'))
+        x_input_test = []
+        # the sequence depends on exploit_spec traversal
+        idx = 0
+        for seed_sha1, exploit_paths in exploit_spec.items():
+            if exploit_paths is None:
+                continue
+            try:
+                seed_feature = seed_dict[seed_sha1].toarray()[0]
+            except KeyError:
+                # this seed_fname can be parsed by pdfrw, but not hidost.
+                continue
 
-                for i in range(splits_test[idx]):
-                    x_input_test.append(seed_feature)
-                idx += 1
+            for i in range(splits_test[idx]):
+                x_input_test.append(seed_feature)
+            idx += 1
 
-            x_input_test = np.array(x_input_test)
-            print('Number of intervals for x_input_test:')
-            print(x_input_test.shape)
-            print('Evaluating VRA...')
-            # 15752 / 50.0 = 315.04
-            eval_vra(args.batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
+        x_input_test = np.array(x_input_test)
+        print('Number of intervals for x_input_test:')
+        print(x_input_test.shape)
+        print('Evaluating VRA...')
+        # 15752 / 50.0 = 315.04
+        eval_vra(args.batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
 
-    if __name__=='__main__':
-        args = parse_args()
-        main(args)
+if __name__=='__main__':
+    args = parse_args()
+    main(args)
