@@ -12,6 +12,7 @@ import random
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
