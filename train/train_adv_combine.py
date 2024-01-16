@@ -12,6 +12,9 @@ import scipy
 import random
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+print(physical_devices)
 
 
 with open('bad_monotone.pickle', 'rb') as f:
