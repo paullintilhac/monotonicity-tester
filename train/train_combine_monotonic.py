@@ -22,6 +22,8 @@ tf.disable_v2_behavior()
 strat = tf.distribute.MirroredStrategy()
 
 
+cwd = os.getcwd()
+print("cwd: " + str(cwd))
 
 
 
