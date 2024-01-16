@@ -19,7 +19,7 @@ print(physical_devices)
 
 tf.compat.v1.disable_eager_execution()
 tf.disable_v2_behavior()
-tf.distribute.MirroredStrategy()
+strat = tf.distribute.MirroredStrategy()
 
 
 
@@ -391,7 +391,7 @@ def adv_train(model, train_interval_path, model_name):
     m_x_input_test, m_x_upper_test, m_y_input_test = generate_intervals(test_feat, test_spec)
 
     saver = tf.train.Saver()
-    with tf.device('/device:GPU:0'):
+    with strat.scope():
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             sess.run(tf.local_variables_initializer())

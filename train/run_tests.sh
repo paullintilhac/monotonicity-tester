@@ -18,10 +18,7 @@
 
 #train monotonic
 python monotonic.py --num_trees 1000 --model_name model_1000learner
-<<<<<<< HEAD
-=======
 #train robust combine two
->>>>>>> master
 time python train_insert_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_two
 #train robust combine three
 time python train_combine_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_three
@@ -29,13 +26,8 @@ time python train_combine_monotonic.py --train robustness_spec/seed_train_malici
 time python train_insert_monotonic.py --model_name robust_monotonic
 #train_adv_combine
 time python train_adv_combine.py --batch_size 50 --batches 132900 --verbose 2000 --model_name baseline_adv_combine_two
-<<<<<<< HEAD
-#baseline
-#python train.py --baseline --batches 5276 
-=======
 # train baseline
 python train.py --baseline --batches 5276 
->>>>>>> master
 
 python preprocess.py --model_name "robust_combine_three" -D empirical --edge
 python preprocess.py --model_name "robust_combine_three" -D uniform --edge

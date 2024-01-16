@@ -7,22 +7,20 @@ import pickle
 from sklearn import datasets
 from sklearn.metrics import confusion_matrix, accuracy_score
 import tensorflow.compat.v1 as tf
-from model_v2 import Model
+from model import Model
 import scipy
 import random
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
-tf.distribute.MirroredStrategy()
+
+strat= tf.distribute.MirroredStrategy()
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 print(physical_devices)
 
-<<<<<<< HEAD
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 print(physical_devices)
-=======
->>>>>>> master
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
@@ -377,7 +375,7 @@ def main(args):
     test_interval_path = 'robustness_spec/seed_test_malicious/mutate_insert_rootallbutone/pickles/'
 
     saver = tf.train.Saver()
-    with tf.device('/device:GPU:0'):
+    with strat.scope():
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
