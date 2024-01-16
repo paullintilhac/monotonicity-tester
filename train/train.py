@@ -153,45 +153,7 @@ def train(model):
 
             print("about to write mutated data and predictions...")
             print('======= DONE =======')
-            newX=x_test.copy()
-
-            y_p = sess.run(model.y_pred,\
-                        feed_dict={model.x_input:newX,\
-                        model.y_input:y_test
-                        })
             
-            x_mutated = []
-            for i in range(len(x_test)):
-                x_mutated.append(mutate(newX[i],y_p[i],k=2))
-
-            y_mutated = sess.run(model.y_pred,\
-                        feed_dict={model.x_input:x_mutated,\
-                        model.y_input:y_test
-                        })
-            
-            finalArray = []
-            print("example x: " + str(x_test[0]))
-            print("example x: " + str(len(x_test[0])))
-
-            for i in range(len(x_mutated)):
-                sum_orig = str(np.sum(x_test[i]))
-                sum_mutated = str(np.sum(x_mutated[i]))
-                mutated_pred = str(y_mutated[i])
-                orig_pred = str(y_p[i])
-                finalObj={
-                    'sum_orig': sum_orig,
-                    'sum_mutated': sum_mutated,
-                    'mutated_pred': mutated_pred,
-                    'orig_pred': orig_pred,
-                    'x_test': x_test[i],
-                    'x_mutated': x_mutated[i]
-                }
-                finalArray.append(finalObj)
-            print("writing to train.pickle...")
-            with open('train.pickle', 'wb') as handle:
-                pickle.dump(finalArray, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
 
             print("x_test len: " + str(len(x_test)))
             epoch = batch_num * batch_size / x_train.shape[0]

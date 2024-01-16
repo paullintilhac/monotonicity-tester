@@ -13,10 +13,13 @@ import sys
 import random
 import scipy
 
-devices = tf.config.list_physical_devices()
-print(devices)
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+print(physical_devices)
+
 tf.compat.v1.disable_eager_execution()
 tf.disable_v2_behavior()
+
 
 
 

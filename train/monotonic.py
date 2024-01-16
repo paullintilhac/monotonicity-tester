@@ -142,6 +142,7 @@ def main(args):
     test_acc_mutated, test_fpr_mutated = eval(y_true, y_mutated)
     print('mutated test accuracy: ', test_acc_mutated)
     print('mutated test FPR: ', test_fpr_mutated)
+    print("saving monotonic model")
     model_with_constraints.save_model("../models/monotonic/%s.bin" % args.model_name)
     model_with_constraints.dump_model('../models/monotonic/%s.dumped.trees' % args.model_name)
 
