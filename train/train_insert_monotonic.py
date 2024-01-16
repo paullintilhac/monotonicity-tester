@@ -15,7 +15,7 @@ import random
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
-tf.distribute.MirroredStrategy()
+strat = tf.distribute.MirroredStrategy()
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
@@ -305,7 +305,7 @@ def adv_train(model, model_name):
     x_input_test, x_upper_test, y_input_test = generate_intervals(test_feat, test_spec)
 
     saver = tf.train.Saver()
-    with tf.device('/device:GPU:0'):
+    with strat.scope():
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             sess.run(tf.local_variables_initializer())

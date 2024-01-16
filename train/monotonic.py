@@ -125,7 +125,6 @@ def main(args):
     preds = model_with_constraints.predict(dtest)
 
     y_pred = [1 if p > 0.5 else 0 for p in preds]
-    
 
     print(len(y_true), len(y_pred))
     #print y_pred
@@ -135,7 +134,6 @@ def main(args):
  
     model_with_constraints.save_model("../models/monotonic/%s.bin" % args.model_name)
     model_with_constraints.dump_model('../models/monotonic/%s.dumped.trees' % args.model_name)
-
 
 if __name__=='__main__':
     args = parse_args()

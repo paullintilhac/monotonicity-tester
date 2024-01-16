@@ -7,16 +7,20 @@ import pickle
 from sklearn import datasets
 from sklearn.metrics import confusion_matrix, accuracy_score
 import tensorflow.compat.v1 as tf
-from model_v2 import Model
+from model import Model
 import scipy
 import random
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
-tf.distribute.MirroredStrategy()
+
+strat= tf.distribute.MirroredStrategy()
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 print(physical_devices)
 
+print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
+physical_devices = tf.config.experimental.list_physical_devices('GPU')
+print(physical_devices)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
@@ -329,27 +333,9 @@ def new_baseline_adv_train(model, model_name):
         print('======= SAVING MODELS TO: %s' % cur_path)
         saver.save(sess, save_path=cur_path)
         
-        newX=x_test.copy()
-
         print('======= DONE =======')
         #eval_vra(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
 
-        y_p = sess.run(model.y_pred,\
-                    feed_dict={model.x_input:newX,\
-                    model.y_input:y_test
-                    })
-        
-        finalArray = []
-        for i in range(len(x_test)):
-            sum_orig = str(np.sum(x_test[i]))
-            orig_pred = str(y_p[i])
-            finalObj={
-                'sum_orig': sum_orig,
-                'orig_pred': orig_pred,
-                'x_test': x_test[i],
-            }
-            finalArray.append(finalObj)
-        
         acc, fpr = eval(x_test, y_test, sess, model)
         print("======= test acc final:", acc, "test fpr:", fpr)
         # mutated_acc, mutated_fpr = eval(x_mutated, y_test, sess, model)
@@ -389,7 +375,7 @@ def main(args):
     test_interval_path = 'robustness_spec/seed_test_malicious/mutate_insert_rootallbutone/pickles/'
 
     saver = tf.train.Saver()
-    with tf.device('/device:GPU:0'):
+    with strat.scope():
 
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
