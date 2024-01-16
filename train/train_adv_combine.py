@@ -12,13 +12,11 @@ import scipy
 import random
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
+tf.distribute.MirroredStrategy()
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 print(physical_devices)
 
-
-with open('bad_monotone.pickle', 'rb') as f:
-    x_bad = pickle.load(f)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
