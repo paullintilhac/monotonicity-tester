@@ -12,7 +12,6 @@ import random
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
-
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 print(physical_devices)
@@ -114,11 +113,9 @@ def train(model):
 
     saver = tf.train.Saver()
     with tf.device('/device:GPU:0'):
-
         with tf.Session() as sess:
             sess.run(tf.global_variables_initializer())
             sess.run(tf.local_variables_initializer())
-
             if(args.resume):
                 saver.restore(sess, PATH)
                 print("load model from:", PATH)
