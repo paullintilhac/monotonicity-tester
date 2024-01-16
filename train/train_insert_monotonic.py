@@ -15,6 +15,10 @@ import random
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
+
+config = tf.ConfigProto()
+config.gpu_options.allow_growth = True
+
 strat = tf.distribute.MirroredStrategy()
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -28,8 +32,6 @@ if gpus:
         gpus[1],[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5120)])
   except RuntimeError as e:
     print(e)
-
-
 
 
 def parse_args():
@@ -319,7 +321,7 @@ def adv_train(model, model_name):
     print("cwd: " + str(cwd))
     saver = tf.train.Saver()
     with strat.scope():
-        with tf.Session() as sess:
+        with tf.Session(config=config) as sess:
             sess.run(tf.global_variables_initializer())
             sess.run(tf.local_variables_initializer())
 
