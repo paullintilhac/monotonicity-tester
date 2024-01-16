@@ -126,9 +126,9 @@ def main(args):
 
     y_pred = [1 if p > 0.5 else 0 for p in preds]
     xNew = x_test.copy()
-    # x_mutated = []
-    # for i in range(len(x_test)):
-    #     x_mutated.append(mutate(xNew[i],y_pred[i],k=1))
+    x_mutated = []
+    for i in range(len(x_test)):
+        x_mutated.append(mutate(xNew[i],y_pred[i],k=1))
     dmutated = xgb.DMatrix(x_mutated,label=y_test)
     mutated_preds = model_with_constraints.predict(dmutated)
     y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
