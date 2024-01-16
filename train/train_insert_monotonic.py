@@ -299,127 +299,127 @@ def adv_train(model, model_name):
     x_input_test, x_upper_test, y_input_test = generate_intervals(test_feat, test_spec)
 
     saver = tf.train.Saver()
+    with tf.device('/device:GPU:0'):
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            sess.run(tf.local_variables_initializer())
 
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
+            if(args.resume):
+                saver.restore(sess, PATH)
+                print("load model from:", PATH)
+            else:
+                print("initial model as:", PATH)
 
-        if(args.resume):
-            saver.restore(sess, PATH)
-            print("load model from:", PATH)
-        else:
-            print("initial model as:", PATH)
+            for epoch in range(20):
+                start_time = time.time()
+                # shuffle dataset within every epoch.
+                print('Shuffle the regular training datasets...')
+                x_train, y_train = shuffle_data(x_train, y_train)
+                # y_input is always ones.
+                print('Shuffle the interval training datasets...')
+                x_input, x_upper = shuffle_data(x_input, x_upper)
 
-        for epoch in range(20):
-            start_time = time.time()
-            # shuffle dataset within every epoch.
-            print('Shuffle the regular training datasets...')
-            x_train, y_train = shuffle_data(x_train, y_train)
-            # y_input is always ones.
-            print('Shuffle the interval training datasets...')
-            x_input, x_upper = shuffle_data(x_input, x_upper)
+                # regular training index
+                j = 0
+                # robust training index
+                i = 0
+                robust_train_batch = [False for k in range(len(x_train)//batch_size+1)] + [True for k in range(len(x_input)//batch_size+1)]
+                b1 = len(x_train)/batch_size+1
+                b2 = len(x_input)/batch_size+1
+                print('regular batches:', b1, 'robust batches:', b2)
+                print('total batches to run each epoch:', len(robust_train_batch))
 
-            # regular training index
-            j = 0
-            # robust training index
-            i = 0
-            robust_train_batch = [False for k in range(len(x_train)//batch_size+1)] + [True for k in range(len(x_input)//batch_size+1)]
-            b1 = len(x_train)/batch_size+1
-            b2 = len(x_input)/batch_size+1
-            print('regular batches:', b1, 'robust batches:', b2)
-            print('total batches to run each epoch:', len(robust_train_batch))
+                random.shuffle(robust_train_batch)
+                for k in range(len(robust_train_batch)):
+                    if robust_train_batch[k] is False:
+                        if j+batch_size > x_train.shape[0]:
+                            # last batch within this epoch
+                            #print 'batch_size:', batch_size
+                            #print 'j:', j
 
-            random.shuffle(robust_train_batch)
-            for k in range(len(robust_train_batch)):
-                if robust_train_batch[k] is False:
-                    if j+batch_size > x_train.shape[0]:
-                        # last batch within this epoch
-                        #print 'batch_size:', batch_size
-                        #print 'j:', j
+                            remain_size = batch_size-(len(x_train)-j)
+                            last_x_train = np.concatenate((x_train[j:], x_train[:remain_size]))
+                            last_y_train = np.concatenate((y_train[j:], y_train[:remain_size]))
 
-                        remain_size = batch_size-(len(x_train)-j)
-                        last_x_train = np.concatenate((x_train[j:], x_train[:remain_size]))
-                        last_y_train = np.concatenate((y_train[j:], y_train[:remain_size]))
+                            #print 'last regular training batch size:'
+                            #print size(last_x_train)
+                            #print size(last_y_train)
 
-                        #print 'last regular training batch size:'
-                        #print size(last_x_train)
-                        #print size(last_y_train)
-
-                        reg_l, reg_acc, fpr, op = sess.run([regular_loss, model.accuracy_op,\
-                            model.false_positive_op, optimizer_op],\
-                            feed_dict={model.x_input:last_x_train,
-                                model.y_input:last_y_train,
-                                model.upper_input:x_train[:batch_size],
-                                model.lower_input:x_train[:batch_size],
-                                learning_rate:lr}
-                                        )
+                            reg_l, reg_acc, fpr, op = sess.run([regular_loss, model.accuracy_op,\
+                                model.false_positive_op, optimizer_op],\
+                                feed_dict={model.x_input:last_x_train,
+                                    model.y_input:last_y_train,
+                                    model.upper_input:x_train[:batch_size],
+                                    model.lower_input:x_train[:batch_size],
+                                    learning_rate:lr}
+                                            )
+                        else:
+                            # regular training
+                            reg_l, reg_acc, fpr, op = sess.run([regular_loss, model.accuracy_op,\
+                                model.false_positive_op, optimizer_op],\
+                                feed_dict={model.x_input:x_train[j:j+batch_size],
+                                    model.y_input:y_train[j:j+batch_size],
+                                    model.upper_input:x_train[j:j+batch_size],
+                                    model.lower_input:x_train[j:j+batch_size],
+                                    learning_rate:lr}
+                                            )
+                            j += batch_size
                     else:
-                        # regular training
-                        reg_l, reg_acc, fpr, op = sess.run([regular_loss, model.accuracy_op,\
-                            model.false_positive_op, optimizer_op],\
-                            feed_dict={model.x_input:x_train[j:j+batch_size],
-                                model.y_input:y_train[j:j+batch_size],
-                                model.upper_input:x_train[j:j+batch_size],
-                                model.lower_input:x_train[j:j+batch_size],
-                                learning_rate:lr}
-                                        )
-                        j += batch_size
-                else:
-                # robust training
-                #i = 0
-                #print "Running robust training..."
-                #for cur_batch in range(int(len(x_input) / batch_size)):
-                    if i+batch_size > x_input.shape[0]:
-                        # last batch within this epoch
-                        # go to the beginning of x_input
-                        remain_size = batch_size-(len(x_input)-i)
-                        last_x_input = np.concatenate((x_input[i:], x_input[:remain_size]))
-                        last_x_upper = np.concatenate((x_upper[i:], x_upper[:remain_size]))
-                        last_y_input = np.concatenate((y_input[i:], y_input[:remain_size]))
-                        #print 'last robust training batch size:'
-                        #print size(last_x_input)
-                        #print size(last_x_upper)
-                        #print size(last_y_input)
+                    # robust training
+                    #i = 0
+                    #print "Running robust training..."
+                    #for cur_batch in range(int(len(x_input) / batch_size)):
+                        if i+batch_size > x_input.shape[0]:
+                            # last batch within this epoch
+                            # go to the beginning of x_input
+                            remain_size = batch_size-(len(x_input)-i)
+                            last_x_input = np.concatenate((x_input[i:], x_input[:remain_size]))
+                            last_x_upper = np.concatenate((x_upper[i:], x_upper[:remain_size]))
+                            last_y_input = np.concatenate((y_input[i:], y_input[:remain_size]))
+                            #print 'last robust training batch size:'
+                            #print size(last_x_input)
+                            #print size(last_x_upper)
+                            #print size(last_y_input)
 
-                        eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
-                                feed_dict={model.x_input:last_x_input,
-                                    model.y_input:last_y_input,
-                                    model.upper_input:last_x_upper,
-                                    model.lower_input:last_x_input,
-                                                    learning_rate:lr}
-                                                 )
-                    else:
-                        eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
-                                feed_dict={model.x_input:x_input[i:i+batch_size],
-                                    model.y_input:y_input[i:i+batch_size],
-                                    model.upper_input:x_upper[i:i+batch_size],
-                                    model.lower_input:x_input[i:i+batch_size],
-                                                    learning_rate:lr}
-                                                 )
-                        i += batch_size
-                if k != 0 and k % args.verbose ==0:
-                    print("batch_num:", k, "regular loss:", reg_l, "interval loss:",int_l, "regular training acc:", reg_acc, "biased interval training acc:", acc)
-                    test_acc, test_fpr = eval(x_test, y_test, sess, model)
-                    print("*** test acc:", test_acc, "test fpr:, ", test_fpr)
+                            eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
+                                    feed_dict={model.x_input:last_x_input,
+                                        model.y_input:last_y_input,
+                                        model.upper_input:last_x_upper,
+                                        model.lower_input:last_x_input,
+                                                        learning_rate:lr}
+                                                    )
+                        else:
+                            eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
+                                    feed_dict={model.x_input:x_input[i:i+batch_size],
+                                        model.y_input:y_input[i:i+batch_size],
+                                        model.upper_input:x_upper[i:i+batch_size],
+                                        model.lower_input:x_input[i:i+batch_size],
+                                                        learning_rate:lr}
+                                                    )
+                            i += batch_size
+                    if k != 0 and k % args.verbose ==0:
+                        print("batch_num:", k, "regular loss:", reg_l, "interval loss:",int_l, "regular training acc:", reg_acc, "biased interval training acc:", acc)
+                        test_acc, test_fpr = eval(x_test, y_test, sess, model)
+                        print("*** test acc:", test_acc, "test fpr:, ", test_fpr)
 
-            #print 'Current learning rate:', lr
-            lr*=args.lrdecay
-            # FINISHED ONE EPOCH
-            print('Finished epoch %d...' % (epoch+1))
-            # display loss values
-            print("regular loss:", reg_l, "regular training acc:", reg_acc , "interval loss:", int_l, "biased interval training acc:", acc, "epoch time:", time.time()-start_time)
-            # display test acc, test fpr, vra
-            test_acc, test_fpr = eval(x_test, y_test, sess, model)
-            print("======= test acc:", test_acc, "test fpr:", test_fpr)
-            eval_vra_monotonic(batch_size, test_batches, x_input_test, y_input_test, sess, model)
+                #print 'Current learning rate:', lr
+                lr*=args.lrdecay
+                # FINISHED ONE EPOCH
+                print('Finished epoch %d...' % (epoch+1))
+                # display loss values
+                print("regular loss:", reg_l, "regular training acc:", reg_acc , "interval loss:", int_l, "biased interval training acc:", acc, "epoch time:", time.time()-start_time)
+                # display test acc, test fpr, vra
+                test_acc, test_fpr = eval(x_test, y_test, sess, model)
+                print("======= test acc:", test_acc, "test fpr:", test_fpr)
+                eval_vra_monotonic(batch_size, test_batches, x_input_test, y_input_test, sess, model)
 
-        #print '======= DONE ======='
-        #acc, fpr = eval(x_test, y_test, sess, model)
-        #print "======= test acc:", acc, "test fpr:", fpr
-        #eval_vra_all(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
+            #print '======= DONE ======='
+            #acc, fpr = eval(x_test, y_test, sess, model)
+            #print "======= test acc:", acc, "test fpr:", fpr
+            #eval_vra_all(batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
 
-        saver.save(sess, save_path=PATH)
-        print("Model saved to", PATH)
+            saver.save(sess, save_path=PATH)
+            print("Model saved to", PATH)
 
 
 

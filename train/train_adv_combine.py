@@ -389,31 +389,33 @@ def main(args):
     test_interval_path = 'robustness_spec/seed_test_malicious/mutate_insert_rootallbutone/pickles/'
 
     saver = tf.train.Saver()
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
+    with tf.device('/device:GPU:0'):
 
-        saver.restore(sess, PATH)
-        print("load model from:", PATH)
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            sess.run(tf.local_variables_initializer())
+
+            saver.restore(sess, PATH)
+            print("load model from:", PATH)
 
 
-        # Load the test data
-        #pickle_dir = 'robustness_spec/seed_test_malicious/mutate_delete_one/pickles/'
+            # Load the test data
+            #pickle_dir = 'robustness_spec/seed_test_malicious/mutate_delete_one/pickles/'
 
-        # some x_input contains items of sparse matrix type
-        x_input_test = pickle.load(open(os.path.join(test_interval_path, 'x_input.pickle'), 'rb'),encoding='latin1')
-        if type(x_input_test[0]) == scipy.sparse.csr.csr_matrix:
-            x_input_test = np.array([item.toarray()[0] for item in x_input_test])
+            # some x_input contains items of sparse matrix type
+            x_input_test = pickle.load(open(os.path.join(test_interval_path, 'x_input.pickle'), 'rb'),encoding='latin1')
+            if type(x_input_test[0]) == scipy.sparse.csr.csr_matrix:
+                x_input_test = np.array([item.toarray()[0] for item in x_input_test])
 
-        y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'),encoding='latin1')
-        splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'),encoding='latin1')
-        vectors_all_test = pickle.load(open(os.path.join(test_interval_path, 'vectors_all.pickle'), "rb"),encoding='latin1')
+            y_input_test = pickle.load(open(os.path.join(test_interval_path, 'y_input.pickle'), 'rb'),encoding='latin1')
+            splits_test = pickle.load(open(os.path.join(test_interval_path, 'splits.pickle'), 'rb'),encoding='latin1')
+            vectors_all_test = pickle.load(open(os.path.join(test_interval_path, 'vectors_all.pickle'), "rb"),encoding='latin1')
 
-        print('Number of intervals for x_input_test:')
-        print(x_input_test.shape)
-        print('Evaluating VRA...')
-        # 15752 / 50.0 = 315.04
-        #eval_vra(args.batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
+            print('Number of intervals for x_input_test:')
+            print(x_input_test.shape)
+            print('Evaluating VRA...')
+            # 15752 / 50.0 = 315.04
+            #eval_vra(args.batch_size, args.test_batches, x_input_test, y_input_test, vectors_all_test, splits_test, sess, model)
 
 
 
