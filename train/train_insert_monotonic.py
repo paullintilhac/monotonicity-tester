@@ -17,9 +17,20 @@ tf.disable_eager_execution()
 tf.disable_v2_behavior()
 strat = tf.distribute.MirroredStrategy()
 
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-print(physical_devices)
+gpus = tf.config.experimental.list_physical_devices('GPU')
+print("Num GPUs Available: ", len(gpus))
+
+if gpus:
+  try:
+    tf.config.experimental.set_virtual_device_configuration(
+        gpus[0],[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5120)])
+    tf.config.experimental.set_virtual_device_configuration(
+        gpus[1],[tf.config.experimental.VirtualDeviceConfiguration(memory_limit=5120)])
+  except RuntimeError as e:
+    print(e)
+
+
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
