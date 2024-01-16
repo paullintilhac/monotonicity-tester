@@ -125,43 +125,14 @@ def main(args):
     preds = model_with_constraints.predict(dtest)
 
     y_pred = [1 if p > 0.5 else 0 for p in preds]
-    xNew = x_test.copy()
-    x_mutated = []
-    for i in range(len(x_test)):
-        x_mutated.append(mutate(xNew[i],y_pred[i],k=1))
-    dmutated = xgb.DMatrix(x_mutated,label=y_test)
-    mutated_preds = model_with_constraints.predict(dmutated)
-    y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
-    print("y_pred: " + str(y_pred) + "y_mutated: " + str(y_mutated))
-    finalArray = []
-    for i in range(len(x_mutated)):
-        sum_orig = str(np.sum(x_test[i]))
-        sum_mutated = str(np.sum(x_mutated[i]))
-        mutated_pred = str(y_mutated[i])
-        orig_pred = str(y_pred[i])
-        finalObj={
-            'sum_orig': sum_orig,
-            'sum_mutated': sum_mutated,
-            'mutated_pred': mutated_pred,
-            'orig_pred': orig_pred,
-            'x_test': x_test[i],
-            'x_mutated': x_mutated[i]
-        }
-        print("finalObj: " + str(finalObj))
-        finalArray.append(finalObj)
-            
-        with open('monotonic.pickle', 'wb') as handle:
-            pickle.dump(finalArray, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
+    
 
     print(len(y_true), len(y_pred))
     #print y_pred
     test_acc, test_fpr = eval(y_true, y_pred)
     print('test accuracy: ', test_acc)
     print('test FPR: ', test_fpr)
-    test_acc_mutated, test_fpr_mutated = eval(y_true, y_mutated)
-    print('mutated test accuracy: ', test_acc_mutated)
-    print('mutated test FPR: ', test_fpr_mutated)
+ 
     model_with_constraints.save_model("../models/monotonic/%s.bin" % args.model_name)
     model_with_constraints.dump_model('../models/monotonic/%s.dumped.trees' % args.model_name)
 
