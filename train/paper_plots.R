@@ -1,7 +1,4 @@
 library(data.table)
-library(lattice)
-library(gplots)
-library(kableExtra)
 library(huxtable)
 if (FALSE){
 eps = seq(.01,.15,by=.02)

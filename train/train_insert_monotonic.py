@@ -15,7 +15,11 @@ import random
 
 tf.disable_eager_execution()
 tf.disable_v2_behavior()
+<<<<<<< HEAD
 
+=======
+tf.distribute.MirroredStrategy()
+>>>>>>> master
 
 print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 physical_devices = tf.config.experimental.list_physical_devices('GPU')

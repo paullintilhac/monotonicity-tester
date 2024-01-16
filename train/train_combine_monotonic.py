@@ -19,6 +19,7 @@ print(physical_devices)
 
 tf.compat.v1.disable_eager_execution()
 tf.disable_v2_behavior()
+tf.distribute.MirroredStrategy()
 
 
 

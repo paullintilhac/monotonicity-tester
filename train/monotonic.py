@@ -125,24 +125,13 @@ def main(args):
     preds = model_with_constraints.predict(dtest)
 
     y_pred = [1 if p > 0.5 else 0 for p in preds]
-    xNew = x_test.copy()
-    x_mutated = []
-    for i in range(len(x_test)):
-        x_mutated.append(mutate(xNew[i],y_pred[i],k=1))
-    dmutated = xgb.DMatrix(x_mutated,label=y_test)
-    mutated_preds = model_with_constraints.predict(dmutated)
-    y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
-   
 
     print(len(y_true), len(y_pred))
     #print y_pred
     test_acc, test_fpr = eval(y_true, y_pred)
     print('test accuracy: ', test_acc)
     print('test FPR: ', test_fpr)
-    test_acc_mutated, test_fpr_mutated = eval(y_true, y_mutated)
-    print('mutated test accuracy: ', test_acc_mutated)
-    print('mutated test FPR: ', test_fpr_mutated)
-    print("saving monotonic model")
+ 
     model_with_constraints.save_model("../models/monotonic/%s.bin" % args.model_name)
     model_with_constraints.dump_model('../models/monotonic/%s.dumped.trees' % args.model_name)
 
