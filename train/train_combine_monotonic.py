@@ -387,169 +387,169 @@ def adv_train(model, train_interval_path, model_name):
     m_x_input_test, m_x_upper_test, m_y_input_test = generate_intervals(test_feat, test_spec)
 
     saver = tf.train.Saver()
+    with tf.device('/device:GPU:0'):
+        with tf.Session() as sess:
+            sess.run(tf.global_variables_initializer())
+            sess.run(tf.local_variables_initializer())
 
-    with tf.Session() as sess:
-        sess.run(tf.global_variables_initializer())
-        sess.run(tf.local_variables_initializer())
-
-        if(args.resume):
-            saver.restore(sess, PATH)
-            print("load model from:", PATH)
-        else:
-            print("initial model as:", PATH)
-
-        for epoch in range(10):
-            start_time = time.time()
-            # shuffle dataset within every epoch.
-            print('Shuffle the regular training datasets...')
-            x_train, y_train = shuffle_data(x_train, y_train)
-            # y_input is always ones.
-            print('Shuffle the insertion intervals...')
-            ins_x_input, ins_vectors_all = shuffle_data(ins_x_input, ins_vectors_all)
-            print('Shuffle the deletion intervals...')
-            del_x_input, del_vectors_all = shuffle_data(del_x_input, del_vectors_all)
-
-            # regular training index
-            j = 0
-            # robust deletion training index
-            i = 0
-            # robust insertion training index
-            k = 0
-            # robust monotonic training index
-            m = 0
-            b1 = len(x_train)//batch_size+1
-            b2 = len(ins_x_input)//batch_size+1
-            b3 = len(del_x_input)//batch_size+1
-            b4 = len(m_x_input)//batch_size+1
-            robust_train_batch = [0 for s in range(b1)] + [1 for s in range(b2)] + [2 for s in range(b3)] + [3 for t in range(b4)]
-            print('regular batches:', b1, 'insertion batches:', b2, 'deletion batches:', b3, 'monotonic batches:', b4)
-            print('total batches to run each epoch:', len(robust_train_batch))
-
-            random.shuffle(robust_train_batch)
-            for s in range(len(robust_train_batch)):
-                # regular training
-                if robust_train_batch[s] == 0:
-                    if j+batch_size > x_train.shape[0]:
-                        remain_size = batch_size-(len(x_train)-j)
-                        last_x_train = np.concatenate((x_train[j:], x_train[:remain_size]))
-                        last_y_train = np.concatenate((y_train[j:], y_train[:remain_size]))
-                        reg_l, reg_acc, fpr, op = sess.run([regular_loss, model.accuracy_op,\
-                            model.false_positive_op, optimizer_op],\
-                            feed_dict={model.x_input:last_x_train,
-                                model.y_input:last_y_train,
-                                model.upper_input:x_train[:batch_size],
-                                model.lower_input:x_train[:batch_size],
-                                learning_rate:lr}
-                                        )
-                    else:
-                        reg_l, reg_acc, fpr, op = sess.run([regular_loss, model.accuracy_op,\
-                            model.false_positive_op, optimizer_op],\
-                            feed_dict={model.x_input:x_train[j:j+batch_size],
-                                model.y_input:y_train[j:j+batch_size],
-                                model.upper_input:x_train[j:j+batch_size],
-                                model.lower_input:x_train[j:j+batch_size],
-                                learning_rate:lr}
-                                        )
-                        j += batch_size
-                # insertion robust training
-                elif robust_train_batch[s] == 1:
-                    if i+batch_size > ins_x_input.shape[0]:
-                        # last batch within this epoch
-                        # go to the beginning of x_input
-                        remain_size = batch_size-(len(ins_x_input)-i)
-                        last_x_input = np.concatenate((ins_x_input[i:], ins_x_input[:remain_size]))
-                        last_x_upper = np.concatenate((ins_vectors_all[i:], ins_vectors_all[:remain_size]))
-                        last_y_input = np.concatenate((ins_y_input[i:], ins_y_input[:remain_size]))
-                        eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
-                                feed_dict={model.x_input:last_x_input,
-                                    model.y_input:last_y_input,
-                                    model.upper_input:last_x_upper,
-                                    model.lower_input:last_x_input,
-                                                    learning_rate:lr}
-                                                 )
-                    else:
-                        eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
-                                feed_dict={model.x_input:ins_x_input[i:i+batch_size],
-                                    model.y_input:ins_y_input[i:i+batch_size],
-                                    model.upper_input:ins_vectors_all[i:i+batch_size],
-                                    model.lower_input:ins_x_input[i:i+batch_size],
-                                                    learning_rate:lr}
-                                                 )
-                        i += batch_size
-                # deletion robust training
-                elif robust_train_batch[s] == 2:
-                    if k+batch_size > del_x_input.shape[0]:
-                        # last batch within this epoch
-                        # go to the beginning of x_input
-                        remain_size = batch_size-(len(del_x_input)-k)
-                        last_x_input = np.concatenate((del_x_input[k:], del_x_input[:remain_size]))
-                        last_x_lower = np.concatenate((del_vectors_all[k:], del_vectors_all[:remain_size]))
-                        last_y_input = np.concatenate((del_y_input[k:], del_y_input[:remain_size]))
-                        eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
-                                feed_dict={model.x_input:last_x_input,
-                                    model.y_input:last_y_input,
-                                    model.upper_input:last_x_input,
-                                    model.lower_input:last_x_lower,
-                                                    learning_rate:lr}
-                                                 )
-                    else:
-                        eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
-                                feed_dict={model.x_input:del_x_input[k:k+batch_size],
-                                    model.y_input:del_y_input[k:k+batch_size],
-                                    model.upper_input:del_x_input[k:k+batch_size],
-                                    model.lower_input:del_vectors_all[k:k+batch_size],
-                                                    learning_rate:lr}
-                                                 )
-                        k += batch_size
-                else:
-                    if m+batch_size > m_x_input.shape[0]:
-                        # last batch within this epoch
-                        # go to the beginning of x_input
-                        remain_size = batch_size-(len(m_x_input)-m)
-                        last_x_input = np.concatenate((m_x_input[m:], m_x_input[:remain_size]))
-                        last_x_upper = np.concatenate((m_x_upper[m:], m_x_upper[:remain_size]))
-                        last_y_input = np.concatenate((m_y_input[m:], m_y_input[:remain_size]))
-                        eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
-                                feed_dict={model.x_input:last_x_input,
-                                    model.y_input:last_y_input,
-                                    model.upper_input:last_x_upper,
-                                    model.lower_input:last_x_input,
-                                                    learning_rate:lr}
-                                                 )
-                    else:
-                        eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
-                                feed_dict={model.x_input:m_x_input[m:m+batch_size],
-                                    model.y_input:m_y_input[m:m+batch_size],
-                                    model.upper_input:m_x_upper[m:m+batch_size],
-                                    model.lower_input:m_x_input[m:m+batch_size],
-                                                    learning_rate:lr}
-                                                 )
-                        m += batch_size
-
-                if s != 0 and s % args.verbose ==0:
-                    print("batch_num:", s, "regular loss:", reg_l, "interval loss:",int_l, "regular training acc:", reg_acc, "biased interval training acc:", acc)
-                    test_acc, test_fpr = eval(x_test, y_test, sess, model)
-                    print("*** test acc:", test_acc, "test fpr:, ", test_fpr)
-
-            lr*=args.lrdecay
-            # FINISHED ONE EPOCH
-            print('Finished epoch %d...' % (epoch+1))
-            test_acc, test_fpr = eval(x_test, y_test, sess, model)
-            print("======= test acc:", test_acc, "test fpr:", test_fpr)
-            # display vra
-            print('INSERTION VRA')
-            eval_vra_ins(batch_size, 2869, ins_x_input_test, ins_y_input_test, ins_vectors_all_test, ins_splits_test, sess, model)
-            print('DELETION VRA')
-            eval_vra_del(batch_size, 313, del_x_input_test, del_y_input_test, del_vectors_all_test, del_splits_test, sess, model)
-            print('MONOTONIC VRA')
-            eval_vra_monotonic(batch_size, test_batches, m_x_input_test, m_y_input_test, sess, model)
-
-            if args.resume:
-                cur_path = '../models/adv_trained/%s_e%s.ckpt' % (model_name, epoch+11)
+            if(args.resume):
+                saver.restore(sess, PATH)
+                print("load model from:", PATH)
             else:
-                cur_path = '../models/adv_trained/%s_e%s.ckpt' % (model_name, epoch+1)
-            print('======= SAVING MODELS TO: %s' % cur_path)
-            saver.save(sess, save_path=cur_path)
+                print("initial model as:", PATH)
+
+            for epoch in range(10):
+                start_time = time.time()
+                # shuffle dataset within every epoch.
+                print('Shuffle the regular training datasets...')
+                x_train, y_train = shuffle_data(x_train, y_train)
+                # y_input is always ones.
+                print('Shuffle the insertion intervals...')
+                ins_x_input, ins_vectors_all = shuffle_data(ins_x_input, ins_vectors_all)
+                print('Shuffle the deletion intervals...')
+                del_x_input, del_vectors_all = shuffle_data(del_x_input, del_vectors_all)
+
+                # regular training index
+                j = 0
+                # robust deletion training index
+                i = 0
+                # robust insertion training index
+                k = 0
+                # robust monotonic training index
+                m = 0
+                b1 = len(x_train)//batch_size+1
+                b2 = len(ins_x_input)//batch_size+1
+                b3 = len(del_x_input)//batch_size+1
+                b4 = len(m_x_input)//batch_size+1
+                robust_train_batch = [0 for s in range(b1)] + [1 for s in range(b2)] + [2 for s in range(b3)] + [3 for t in range(b4)]
+                print('regular batches:', b1, 'insertion batches:', b2, 'deletion batches:', b3, 'monotonic batches:', b4)
+                print('total batches to run each epoch:', len(robust_train_batch))
+
+                random.shuffle(robust_train_batch)
+                for s in range(len(robust_train_batch)):
+                    # regular training
+                    if robust_train_batch[s] == 0:
+                        if j+batch_size > x_train.shape[0]:
+                            remain_size = batch_size-(len(x_train)-j)
+                            last_x_train = np.concatenate((x_train[j:], x_train[:remain_size]))
+                            last_y_train = np.concatenate((y_train[j:], y_train[:remain_size]))
+                            reg_l, reg_acc, fpr, op = sess.run([regular_loss, model.accuracy_op,\
+                                model.false_positive_op, optimizer_op],\
+                                feed_dict={model.x_input:last_x_train,
+                                    model.y_input:last_y_train,
+                                    model.upper_input:x_train[:batch_size],
+                                    model.lower_input:x_train[:batch_size],
+                                    learning_rate:lr}
+                                            )
+                        else:
+                            reg_l, reg_acc, fpr, op = sess.run([regular_loss, model.accuracy_op,\
+                                model.false_positive_op, optimizer_op],\
+                                feed_dict={model.x_input:x_train[j:j+batch_size],
+                                    model.y_input:y_train[j:j+batch_size],
+                                    model.upper_input:x_train[j:j+batch_size],
+                                    model.lower_input:x_train[j:j+batch_size],
+                                    learning_rate:lr}
+                                            )
+                            j += batch_size
+                    # insertion robust training
+                    elif robust_train_batch[s] == 1:
+                        if i+batch_size > ins_x_input.shape[0]:
+                            # last batch within this epoch
+                            # go to the beginning of x_input
+                            remain_size = batch_size-(len(ins_x_input)-i)
+                            last_x_input = np.concatenate((ins_x_input[i:], ins_x_input[:remain_size]))
+                            last_x_upper = np.concatenate((ins_vectors_all[i:], ins_vectors_all[:remain_size]))
+                            last_y_input = np.concatenate((ins_y_input[i:], ins_y_input[:remain_size]))
+                            eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
+                                    feed_dict={model.x_input:last_x_input,
+                                        model.y_input:last_y_input,
+                                        model.upper_input:last_x_upper,
+                                        model.lower_input:last_x_input,
+                                                        learning_rate:lr}
+                                                    )
+                        else:
+                            eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
+                                    feed_dict={model.x_input:ins_x_input[i:i+batch_size],
+                                        model.y_input:ins_y_input[i:i+batch_size],
+                                        model.upper_input:ins_vectors_all[i:i+batch_size],
+                                        model.lower_input:ins_x_input[i:i+batch_size],
+                                                        learning_rate:lr}
+                                                    )
+                            i += batch_size
+                    # deletion robust training
+                    elif robust_train_batch[s] == 2:
+                        if k+batch_size > del_x_input.shape[0]:
+                            # last batch within this epoch
+                            # go to the beginning of x_input
+                            remain_size = batch_size-(len(del_x_input)-k)
+                            last_x_input = np.concatenate((del_x_input[k:], del_x_input[:remain_size]))
+                            last_x_lower = np.concatenate((del_vectors_all[k:], del_vectors_all[:remain_size]))
+                            last_y_input = np.concatenate((del_y_input[k:], del_y_input[:remain_size]))
+                            eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
+                                    feed_dict={model.x_input:last_x_input,
+                                        model.y_input:last_y_input,
+                                        model.upper_input:last_x_input,
+                                        model.lower_input:last_x_lower,
+                                                        learning_rate:lr}
+                                                    )
+                        else:
+                            eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
+                                    feed_dict={model.x_input:del_x_input[k:k+batch_size],
+                                        model.y_input:del_y_input[k:k+batch_size],
+                                        model.upper_input:del_x_input[k:k+batch_size],
+                                        model.lower_input:del_vectors_all[k:k+batch_size],
+                                                        learning_rate:lr}
+                                                    )
+                            k += batch_size
+                    else:
+                        if m+batch_size > m_x_input.shape[0]:
+                            # last batch within this epoch
+                            # go to the beginning of x_input
+                            remain_size = batch_size-(len(m_x_input)-m)
+                            last_x_input = np.concatenate((m_x_input[m:], m_x_input[:remain_size]))
+                            last_x_upper = np.concatenate((m_x_upper[m:], m_x_upper[:remain_size]))
+                            last_y_input = np.concatenate((m_y_input[m:], m_y_input[:remain_size]))
+                            eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
+                                    feed_dict={model.x_input:last_x_input,
+                                        model.y_input:last_y_input,
+                                        model.upper_input:last_x_upper,
+                                        model.lower_input:last_x_input,
+                                                        learning_rate:lr}
+                                                    )
+                        else:
+                            eq, int_l, acc, op = sess.run([model.equation, interval_loss, model.accuracy_op, optimizer_op],\
+                                    feed_dict={model.x_input:m_x_input[m:m+batch_size],
+                                        model.y_input:m_y_input[m:m+batch_size],
+                                        model.upper_input:m_x_upper[m:m+batch_size],
+                                        model.lower_input:m_x_input[m:m+batch_size],
+                                                        learning_rate:lr}
+                                                    )
+                            m += batch_size
+
+                    if s != 0 and s % args.verbose ==0:
+                        print("batch_num:", s, "regular loss:", reg_l, "interval loss:",int_l, "regular training acc:", reg_acc, "biased interval training acc:", acc)
+                        test_acc, test_fpr = eval(x_test, y_test, sess, model)
+                        print("*** test acc:", test_acc, "test fpr:, ", test_fpr)
+
+                lr*=args.lrdecay
+                # FINISHED ONE EPOCH
+                print('Finished epoch %d...' % (epoch+1))
+                test_acc, test_fpr = eval(x_test, y_test, sess, model)
+                print("======= test acc:", test_acc, "test fpr:", test_fpr)
+                # display vra
+                print('INSERTION VRA')
+                eval_vra_ins(batch_size, 2869, ins_x_input_test, ins_y_input_test, ins_vectors_all_test, ins_splits_test, sess, model)
+                print('DELETION VRA')
+                eval_vra_del(batch_size, 313, del_x_input_test, del_y_input_test, del_vectors_all_test, del_splits_test, sess, model)
+                print('MONOTONIC VRA')
+                eval_vra_monotonic(batch_size, test_batches, m_x_input_test, m_y_input_test, sess, model)
+
+                if args.resume:
+                    cur_path = '../models/adv_trained/%s_e%s.ckpt' % (model_name, epoch+11)
+                else:
+                    cur_path = '../models/adv_trained/%s_e%s.ckpt' % (model_name, epoch+1)
+                print('======= SAVING MODELS TO: %s' % cur_path)
+                saver.save(sess, save_path=cur_path)
 
         """
         print '======= DONE ======='
