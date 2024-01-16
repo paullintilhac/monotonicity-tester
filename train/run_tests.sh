@@ -10,7 +10,7 @@ time python train_insert_monotonic.py --model_name robust_monotonic
 #train_adv_combine
 time python train_adv_combine.py --batch_size 50 --batches 132900 --verbose 2000 --model_name baseline_adv_combine_two
 #baseline
-python train.py --baseline --batches 5276 
+#python train.py --baseline --batches 5276 
 
 python preprocess.py --model_name "robust_combine_three" -D empirical --edge
 python preprocess.py --model_name "robust_combine_three" -D uniform --edge
