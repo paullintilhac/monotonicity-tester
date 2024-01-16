@@ -12,8 +12,6 @@ import xgboost as xgb
 from sklearn.datasets import load_digits
 #from sklearn.model_selection import KFold
 
-with open('bad_monotone.pickle', 'rb') as f:
-    x_bad = pickle.load(f)
 # Some logging settings
 basicConfig(level=INFO)
 logger = getLogger(__name__)
@@ -98,11 +96,6 @@ def main(args):
                                        zero_based=False,
                                        query_id=False)
     x_test = x_test.toarray()
-    # print("len(x_bad[0]): " + str(len((x_bad[0]))))
-    x_test = [x_bad[0]]
-    #print("len(x_test[0]: " + str(len(x_test)))
-    y_test = [y_test[0]]
-    #print("len ytest : " + str(len(y_test)))
 
     dtrain = xgb.DMatrix(x_train, label=y_train)
     dtest = xgb.DMatrix(x_test, label=y_test)
