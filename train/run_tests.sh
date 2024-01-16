@@ -1,4 +1,6 @@
 #!/bin/bash
+
+#to run this file in background and pipe output, run ./run_tests.sh > run_log.txt 2>&1 &
  
 #SBATCH --account=temfom0  # Specify the account to charge
 
