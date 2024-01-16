@@ -70,3 +70,6 @@ python preprocess.py --model_name "robust_combine_two" -D centered --edge
 python preprocess.py --model_name "robust_combine_two" -D empirical
 python preprocess.py --model_name "robust_combine_two" -D uniform
 python preprocess.py --model_name "robust_combine_two" -D centered
+
+#Rscript -e 'install.packages(c("data.table","huxtable"), repos="https://cloud.r-project.org",lib="~/R/x86_64-redhat-linux-gnu-library/3.6")'
+Rscript  paper_plots.R
