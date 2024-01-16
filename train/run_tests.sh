@@ -21,15 +21,15 @@
 #train monotonic
 python monotonic.py --num_trees 1000 --model_name model_1000learner
 #train robust combine two
-time python train_insert_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_two
+time python train_insert_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_two --batch_size 10
 #train robust combine three
-time python train_combine_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_three
+time python train_combine_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_three --batch_size 10
 #train robust monotonic
-time python train_insert_monotonic.py --model_name robust_monotonic
+time python train_insert_monotonic.py --model_name robust_monotonic --batch_size 10
 #train_adv_combine
-time python train_adv_combine.py --batch_size 50 --batches 132900 --verbose 2000 --model_name baseline_adv_combine_two
+time python train_adv_combine.py --batch_size 10 --batches 664500 --verbose 2000 --model_name baseline_adv_combine_two
 # train baseline
-python train.py --baseline --batches 5276 
+python train.py --baseline --batches 25000 --batch_size 10
 
 python preprocess.py --model_name "robust_combine_three" -D empirical --edge
 python preprocess.py --model_name "robust_combine_three" -D uniform --edge
