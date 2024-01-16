@@ -1,6 +1,5 @@
 #!/bin/bash
  
-
 #SBATCH --account=temfom0  # Specify the account to charge
 
 #SBATCH --job-name=train_models_and_test_monotonicity  # Job name
@@ -17,12 +16,11 @@
 
 #SBATCH --partition=standard  # Specify the partition to submit to
 
- 
+#train monotonic
+python monotonic.py --num_trees 1000 --model_name model_1000learner
 time python train_insert_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_two
 #train robust combine three
 time python train_combine_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_three
-#train monotonic
-python monotonic.py --num_trees 1000 --model_name model_1000learner
 #train robust monotonic
 time python train_insert_monotonic.py --model_name robust_monotonic
 #train_adv_combine
