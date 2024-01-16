@@ -18,10 +18,8 @@ print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 print(physical_devices)
 
-print("Num GPUs Available: ", len(tf.config.list_physical_devices('GPU')))
-physical_devices = tf.config.experimental.list_physical_devices('GPU')
-print(physical_devices)
-
+cwd = os.getcwd()
+print("cwd: " + str(cwd))
 def parse_args():
     parser = argparse.ArgumentParser(description='Regular training and robust training of the pdf malware classification model.')
     parser.add_argument('--seed_feat', type=str, help='Seed feature value pickle.')

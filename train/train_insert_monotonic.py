@@ -304,6 +304,8 @@ def adv_train(model, model_name):
     print('Generating the testing interval datasets...')
     x_input_test, x_upper_test, y_input_test = generate_intervals(test_feat, test_spec)
 
+    cwd = os.getcwd()
+    print("cwd: " + str(cwd))
     saver = tf.train.Saver()
     with strat.scope():
         with tf.Session() as sess:

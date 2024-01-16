@@ -16,6 +16,8 @@ from sklearn.datasets import load_digits
 basicConfig(level=INFO)
 logger = getLogger(__name__)
 
+cwd = os.getcwd()
+print("cwd: " + str(cwd))
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a monotonic classifier.')
     parser.add_argument('--num_trees', type=int, help='Number of trees.', required=True)
