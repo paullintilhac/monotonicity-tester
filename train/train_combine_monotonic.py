@@ -343,11 +343,13 @@ def adv_train(model, train_interval_path, model_name):
     pickle_dir = args.train
     print("pickle_dir: " + str(pickle_dir))
     ins_x_input = pickle.load(open(os.path.join(pickle_dir, 'x_input.pickle'), 'rb'),encoding='latin1')
+    print("finished reading in ins_x_input")
     if type(ins_x_input[0]) == scipy.sparse.csr.csr_matrix:
         ins_x_input = np.array([item.toarray()[0] for item in ins_x_input])
     ins_y_input = pickle.load(open(os.path.join(pickle_dir, 'y_input.pickle'), 'rb'),encoding='latin1')
+    print("finished reading in y_input")
     ins_vectors_all = pickle.load(open(os.path.join(pickle_dir, 'vectors_all.pickle'), "rb"),encoding='latin1')
-
+    print("finished reading in vectors_all")
     print(ins_x_input.shape)
 
     # Load the test data
