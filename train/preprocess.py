@@ -243,7 +243,8 @@ with strat.scope():
                     return "Reject"
             return "Accept"
         pathString = "" if path else "_edge"
-        with open("tests/"+filename+"_"+D+pathString+'.csv', 'w', newline='') as file:
+        trainString = "_train" if train_only else ""
+        with open("tests/"+filename+"_"+D+pathString+trainString+'.csv', 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(["epsilon", "delta","success"])
             
@@ -270,11 +271,9 @@ with strat.scope():
                         success = "N/A"
                         writer.writerow([e, d,success])
                         continue
-                    
                     numRounds = m//len(x_test)
                     remainderRound = m%len(x_test)
                         # print("maxM: " + str(maxM) + ", len(x_test): " + str(len(x_test)) + ", numRounds: " + str(numRounds) + ", remainder: " + str(remainderRound)) 
-                    
                     if D=="empirical":
                         success = testBatch(x_test,cap=m,xgb_mod=xgb_model,centered=False,path =path)
                     else:
