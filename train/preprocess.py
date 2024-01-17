@@ -271,17 +271,9 @@ with strat.scope():
                         success = "N/A"
                         writer.writerow([e, d,success])
                         continue
-<<<<<<< HEAD
-                    
+
                     numRounds = m//len(x_test)
                     remainderRound = m%len(x_test)
-                        # print("maxM: " + str(maxM) + ", len(x_test): " + str(len(x_test)) + ", numRounds: " + str(numRounds) + ", remainder: " + str(remainderRound)) 
-                    
-=======
-                    numRounds = m//len(x_test)
-                    remainderRound = m%len(x_test)
-                        # print("maxM: " + str(maxM) + ", len(x_test): " + str(len(x_test)) + ", numRounds: " + str(numRounds) + ", remainder: " + str(remainderRound)) 
->>>>>>> master
                     if D=="empirical":
                         success = testBatch(x_test,cap=m,xgb_mod=xgb_model,centered=False,path =path)
                     else:

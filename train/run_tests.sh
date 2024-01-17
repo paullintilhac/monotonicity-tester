@@ -84,8 +84,6 @@ python preprocess.py --model_name "robust_combine_two" -D empirical
 python preprocess.py --model_name "robust_combine_two" -D uniform
 python preprocess.py --model_name "robust_combine_two" -D centered
 
-<<<<<<< HEAD
-=======
 python preprocess.py --model_name "robust_combine_three" -D empirical --edge --train
 python preprocess.py --model_name "robust_combine_three" -D uniform --edge --train
 python preprocess.py --model_name "robust_combine_three" -D centered --edge --train
@@ -127,7 +125,6 @@ python preprocess.py --model_name "robust_combine_two" -D centered --edge --trai
 python preprocess.py --model_name "robust_combine_two" -D empirical --train
 python preprocess.py --model_name "robust_combine_two" -D uniform --train
 python preprocess.py --model_name "robust_combine_two" -D centered --train
->>>>>>> master
 
 #Rscript -e 'install.packages(c("data.table","huxtable"), repos="https://cloud.r-project.org",lib="~/R/x86_64-redhat-linux-gnu-library/3.6")'
 Rscript  paper_plots.R
