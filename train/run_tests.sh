@@ -18,16 +18,27 @@
 
 #SBATCH --partition=standard  # Specify the partition to submit to
 
+echo "Training Monotonic Model..."
 #train monotonic
 python monotonic.py --num_trees 1000 --model_name model_1000learner
+
+echo "Training Robust (A+B) Model..."
 #train robust combine two
 time python train_insert_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_two
+
+echo "Training Robust (A+B+E) Model..."
 #train robust combine three
 time python train_combine_monotonic.py --train robustness_spec/seed_train_malicious/mutate_insert_any_pt1/pickles --model_name robust_combine_three
+
+echo "Training Robust (D) Model..."
 #train robust monotonic
 time python train_insert_monotonic.py --model_name robust_monotonic 
+
+echo "Training Adversarially Trained (A+B) Model..."
 #train_adv_combine
 time python train_adv_combine.py  --batches 132900 --verbose 2000 --model_name baseline_adv_combine_two
+
+echo "Training Baseline NN Model..."
 # train baseline
 python train.py --baseline --batches 5276
 
