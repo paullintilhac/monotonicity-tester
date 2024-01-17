@@ -23,7 +23,6 @@ def parse_args():
     parser.add_argument('-D', type=str, help='Use \{uniform|centered|empirical\} strategy for pair selection.', required=True)    
     parser.add_argument('--edge', action='store_true', default=False)
     parser.add_argument('--maxM', type=int, default=10000000)
-    parser.add_argument('--maxM', type=int, default=10000000)
     parser.add_argument('--train_only',action='store_true',default=False)
 
 
@@ -152,7 +151,7 @@ with strat.scope():
                 reachedCap = False
                 print("cap: " + str(cap) + ", len(x): " + str(len(x)))
                 if (cap>22000):
-                    print("ran out of examples using empirical-distribution strategy, setting result to N/A")
+                    print("ran out of examples using empirical-distribution strategy starting with " + str(len(x))+" obs, setting result to N/A")
                     return "N/A"
 
                 for i in tqdm(range(len(x)), desc="Finding Pairs within distribution"):

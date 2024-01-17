@@ -17,7 +17,7 @@
 #SBATCH --time=23:00:00  # Time limit hrs:min:sec
 
 #SBATCH --partition=standard  # Specify the partition to submit to
-
+: <<'END'
 echo "Training Monotonic Model..."
 #train monotonic
 python monotonic.py --num_trees 1000 --model_name model_1000learner
@@ -83,49 +83,50 @@ python preprocess.py --model_name "robust_combine_two" -D centered --edge
 python preprocess.py --model_name "robust_combine_two" -D empirical
 python preprocess.py --model_name "robust_combine_two" -D uniform
 python preprocess.py --model_name "robust_combine_two" -D centered
+END
 
-python preprocess.py --model_name "robust_combine_three" -D empirical --edge --train
-python preprocess.py --model_name "robust_combine_three" -D uniform --edge --train
-python preprocess.py --model_name "robust_combine_three" -D centered --edge --train
-python preprocess.py --model_name "robust_combine_three" -D empirical --train
-python preprocess.py --model_name "robust_combine_three" -D uniform --train
-python preprocess.py --model_name "robust_combine_three" -D centered --train
+python preprocess.py --model_name "robust_combine_three" -D empirical --edge --train_only
+python preprocess.py --model_name "robust_combine_three" -D uniform --edge --train_only
+python preprocess.py --model_name "robust_combine_three" -D centered --edge --train_only
+python preprocess.py --model_name "robust_combine_three" -D empirical --train_only
+python preprocess.py --model_name "robust_combine_three" -D uniform --train_only
+python preprocess.py --model_name "robust_combine_three" -D centered --train_only
 
-python preprocess.py --model_name "robust_monotonic" -D empirical --edge --train
-python preprocess.py --model_name "robust_monotonic" -D uniform --edge --train
-python preprocess.py --model_name "robust_monotonic" -D centered --edge --train
-python preprocess.py --model_name "robust_monotonic" -D empirical --train
-python preprocess.py --model_name "robust_monotonic" -D uniform --train
-python preprocess.py --model_name "robust_monotonic" -D centered --train
+python preprocess.py --model_name "robust_monotonic" -D empirical --edge --train_only
+python preprocess.py --model_name "robust_monotonic" -D uniform --edge --train_only
+python preprocess.py --model_name "robust_monotonic" -D centered --edge --train_only
+python preprocess.py --model_name "robust_monotonic" -D empirical --train_only
+python preprocess.py --model_name "robust_monotonic" -D uniform --train_only
+python preprocess.py --model_name "robust_monotonic" -D centered --train_only
 
-python preprocess.py --model_name "monotonic" -D empirical --edge --train
-python preprocess.py --model_name "monotonic" -D uniform --edge --train
-python preprocess.py --model_name "monotonic" -D centered --edge --train
-python preprocess.py --model_name "monotonic" -D empirical --train
-python preprocess.py --model_name "monotonic" -D uniform --train
-python preprocess.py --model_name "monotonic" -D centered --train
+python preprocess.py --model_name "monotonic" -D empirical --edge --train_only
+python preprocess.py --model_name "monotonic" -D uniform --edge --train_only
+python preprocess.py --model_name "monotonic" -D centered --edge --train_only
+python preprocess.py --model_name "monotonic" -D empirical --train_only
+python preprocess.py --model_name "monotonic" -D uniform --train_only
+python preprocess.py --model_name "monotonic" -D centered --train_only
 
-python preprocess.py --model_name "train_adv_combine" -D empirical --edge --train
-python preprocess.py --model_name "train_adv_combine" -D uniform --edge --train
-python preprocess.py --model_name "train_adv_combine" -D centered --edge --train
-python preprocess.py --model_name "train_adv_combine" -D empirical --train
-python preprocess.py --model_name "train_adv_combine" -D uniform --train
-python preprocess.py --model_name "train_adv_combine" -D centered --train
+python preprocess.py --model_name "train_adv_combine" -D empirical --edge --train_only
+python preprocess.py --model_name "train_adv_combine" -D uniform --edge --train_only
+python preprocess.py --model_name "train_adv_combine" -D centered --edge --train_only
+python preprocess.py --model_name "train_adv_combine" -D empirical --train_only
+python preprocess.py --model_name "train_adv_combine" -D uniform --train_only
+python preprocess.py --model_name "train_adv_combine" -D centered --train_only
 
-python preprocess.py --model_name "robust_combine_two" -D empirical --edge --train
-python preprocess.py --model_name "robust_combine_two" -D uniform --edge --train
-python preprocess.py --model_name "robust_combine_two" -D centered --edge --train
-python preprocess.py --model_name "robust_combine_two" -D empirical --train
-python preprocess.py --model_name "robust_combine_two" -D uniform --train
-python preprocess.py --model_name "robust_combine_two" -D centered --train
+python preprocess.py --model_name "robust_combine_two" -D empirical --edge --train_only
+python preprocess.py --model_name "robust_combine_two" -D uniform --edge --train_only
+python preprocess.py --model_name "robust_combine_two" -D centered --edge --train_only
+python preprocess.py --model_name "robust_combine_two" -D empirical --train_only
+python preprocess.py --model_name "robust_combine_two" -D uniform --train_only
+python preprocess.py --model_name "robust_combine_two" -D centered --train_only
 
-python preprocess.py --model_name "robust_combine_two" -D empirical --edge --train
-python preprocess.py --model_name "robust_combine_two" -D uniform --edge --train
-python preprocess.py --model_name "robust_combine_two" -D centered --edge --train
-python preprocess.py --model_name "robust_combine_two" -D empirical --train
-python preprocess.py --model_name "robust_combine_two" -D uniform --train
-python preprocess.py --model_name "robust_combine_two" -D centered --train
+python preprocess.py --model_name "robust_combine_two" -D empirical --edge --train_only
+python preprocess.py --model_name "robust_combine_two" -D uniform --edge --train_only
+python preprocess.py --model_name "robust_combine_two" -D centered --edge --train_only
+python preprocess.py --model_name "robust_combine_two" -D empirical --train_only
+python preprocess.py --model_name "robust_combine_two" -D uniform --train_only
+python preprocess.py --model_name "robust_combine_two" -D centered --train_only
 
 #Rscript -e 'install.packages(c("data.table","huxtable"), repos="https://cloud.r-project.org",lib="~/R/x86_64-redhat-linux-gnu-library/3.6")'
-Rscript  paper_plots.R
+#Rscript  paper_plots.R
 
