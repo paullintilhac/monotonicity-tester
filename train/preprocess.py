@@ -62,6 +62,9 @@ x_test, y_test = datasets.load_svmlight_file(test_data,
                                     query_id=False)
 x_test = x_test.toarray()
 
+if train_only:
+    x_test,y_test = x_train,y_train
+
 #initialize empty model object to load into
 model = Model()
 model.tf_interval1(batch_size)
@@ -240,7 +243,8 @@ with strat.scope():
                     return "Reject"
             return "Accept"
         pathString = "" if path else "_edge"
-        with open("tests/"+filename+"_"+D+pathString+'.csv', 'w', newline='') as file:
+        trainString = "_train" if train_only else ""
+        with open("tests/"+filename+"_"+D+pathString+trainString+'.csv', 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(["epsilon", "delta","success"])
             
@@ -267,11 +271,17 @@ with strat.scope():
                         success = "N/A"
                         writer.writerow([e, d,success])
                         continue
+<<<<<<< HEAD
                     
                     numRounds = m//len(x_test)
                     remainderRound = m%len(x_test)
                         # print("maxM: " + str(maxM) + ", len(x_test): " + str(len(x_test)) + ", numRounds: " + str(numRounds) + ", remainder: " + str(remainderRound)) 
                     
+=======
+                    numRounds = m//len(x_test)
+                    remainderRound = m%len(x_test)
+                        # print("maxM: " + str(maxM) + ", len(x_test): " + str(len(x_test)) + ", numRounds: " + str(numRounds) + ", remainder: " + str(remainderRound)) 
+>>>>>>> master
                     if D=="empirical":
                         success = testBatch(x_test,cap=m,xgb_mod=xgb_model,centered=False,path =path)
                     else:
