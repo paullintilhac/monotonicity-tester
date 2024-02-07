@@ -37,24 +37,30 @@ verbose_names = c("Monotonic XgBoost Model",
                   "Verifiably Robust (A+B+E)",
                   "Adversarially Trained (A+B)",
                   "Baseline Neural Network")
-edgeOptions=c("_edge","")
+edgeOptions=c("_edge")
+trainOptions = c("_train","")
 distOptions = c("_uniform","_centered","_empirical")
-grid = expand.grid(distOptions,edgeOptions,model_names)
-grid$filename = paste0(grid$Var3,grid$Var1,grid$Var2)
+grid = expand.grid(distOptions,edgeOptions,trainOptions,model_names)
+grid$filename = paste0(grid$Var4,grid$Var1,grid$Var2,grid$Var3)
 grid$filepath =paste0("~/code/pdfclassifier/train/tests/",grid$filename,".csv")
 grid$pathString = ifelse(grid$Var2=="_edge","Edge Test, ","Path Test, ")
-grid$distString = ""
+grid$trainString = ifelse(grid$Var3=="_train"," (Train)"," (Test)")
 
+grid$distString = ""
 grid[grid$Var1=="_uniform",]$distString = "Uniform Distribution"
 grid[grid$Var1=="_centered",]$distString = "Centered Distribution"
 grid[grid$Var1=="_empirical",]$distString = "Empirical Distribution"
-grid$caption = paste0(verbose_names,": ",grid$pathString,grid$distString)
+vb = data.table(model_name=model_names,verbose_name=(verbose_names))
+grid = merge(grid,vb,by.x ="Var4",by.y= "model_name")
+grid$caption = paste0(grid$verbose_name,": ",grid$pathString,grid$distString,grid$trainString)
 filenames = grid$filename
 filepaths = grid$filepath
 captions = grid$caption
+
 for (i in 1:length(filenames)){
   print(captions[i])
 }
+
 for (i in 1:length(filenames)){
   file=filepaths[i]
   caption = captions[i]

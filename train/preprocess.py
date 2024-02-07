@@ -34,13 +34,13 @@ D = args.D
 maxM = args.maxM
 filename = args.model_name
 train_only = args.train_only
-
+gamma = .05
 batch_size = 50
 maxM = 10000000
 #eps = [.4]
 #delta = [.4]
-eps = [.01,.1,.5,.9]
-delta = [.01,.1,.5,.9]
+eps = [.01,.1,.25,.5,.9]
+delta = [.01,.1,.25,.5,.9]
 
 train_data = '../data/traintest_all_500test/train_data.libsvm'
 x_train, y_train = datasets.load_svmlight_file(train_data,
@@ -130,9 +130,17 @@ with strat.scope():
                     newInd = random.choice(inds)
                     xCopy[newInd]=1-xCopy[newInd]
             return xCopy
-            
+        
+        def getNeighbors(x):
+            finalList = []
+            print("len(x): " + str(len(x)))
+            for b in range(len(x)):
+                xNew = x.copy()
+                xNew[b] = 1-xNew[b]
+                finalList.append(xNew)
+            return xNew
 
-        def testBatch(x,xgb_mod=None,cap=None,centered=True,path=False):
+        def testBatch(x,xgb_mod=None,cap=None,centered=True,path=False,all_neighbors=False):
             
             if not cap:
                 cap=len(x_test)
@@ -160,27 +168,18 @@ with strat.scope():
                         count+=1
                         x2 = x[j]
                         #if using edge test, search for comparable neighboring points
-
-                        if not path:
+                        if path:
+                            print("Error: path/edge tests not vvalid for empirical distribution test")
+                        
+                        diffVec = x1-x2
+                        maxDiff = np.max(diffVec)
+                        minDiff = np.min(diffVec)
+                        if ((maxDiff>0 and minDiff==0) or (maxDiff==0 and minDiff<0)):
                             x1 = x1.astype(bool)
                             x2 = x2.astype(bool)
-                            xorsum = np.sum(np.bitwise_xor(x1, x2))
-                            if xorsum==1:
-                                xNew.append(x1.astype(int))
-                                x_mutated.append(x2.astype(int))
-                        # if using path test, search for comparable points (maybe need to restrict to distance tau?)
-                        else:
-                            diffVec = x1-x2
-                            maxDiff = np.max(diffVec)
-                            minDiff = np.min(diffVec)
-                            if ((maxDiff>0 and minDiff==0) or (maxDiff==0 and minDiff<0)):
-                                x1 = x1.astype(bool)
-                                x2 = x2.astype(bool)
-                                xorsum = np.sum(np.bitwise_xor(x1, x2))
-                                if xorsum<tau_max:
-                                    xNew.append(x1.astype(int))
-                                    x_mutated.append(x2.astype(int))
-                                
+                            xNew.append(x1.astype(int))
+                            x_mutated.append(x2.astype(int))
+                            
                         if len(x_mutated)==cap:
                             reachedCap = True
                             break
@@ -218,7 +217,11 @@ with strat.scope():
                     })
                 y=y[:cap]
                 for i in range(len(xNew)):
-                    x_mutated.append(mutate(xNew[i],y[i],k=1,path=path))
+                    if all_neighbors:
+                        x_mutated = x_mutated + getNeighbors(xNew[i])
+                        xNew = xNew + [xNew[i]]*n_features
+                    else:
+                        x_mutated.append(mutate(xNew[i],y[i],k=1,path=path))
                     #print("sum xNew: " + str(sum(xNew[i])) + ", sum x_mutated: " + str(sum(x_mutated[i])))
                 if xgb_mod: 
                     dmutated = xgb.DMatrix(x_mutated)
@@ -260,7 +263,28 @@ with strat.scope():
                     else:
                         print("going with big m")
                         m=big_m
+                    
+                    if D=="empirical":
+                        print("using empirical strategy -- going with Fischer's query complexity")
+                        #m=np.ceil(2*np.sqrt( len(x_test)/ e)*(np.log(1/d)/np.log(3)))
+                        nonIsoFactor = (1-3**(-np.sqrt(e/(4*n_obs))))
+                        print("non iso factor: " + str(nonIsoFactor))
+                        m=int(np.ceil(np.log(1/d)/np.log(1/(1-nonIsoFactor))))
+                        print("m for empirical strat: " + str(m))
 
+                    if D=="centered":
+                        print("using mutation strategy -- assuming density of " + str(gamma))
+                        print("prefCTOR: " + str(np.sqrt(e/(4*(n_features+1)*gamma*n_obs))))
+                        nonIsoFactor = 1-3**(-np.sqrt(float(e/(4*(n_features+1)*gamma*n_obs))))
+                        print("nonIsoFactor: " + str(nonIsoFactor))
+                        if gamma>e:
+                            print("sparsity greater than eps, setting success to N/A")
+                            success = "N/A"
+                            writer.writerow([e, d,success])
+                            continue
+                        rej = max(e - gamma,0) + gamma*nonIsoFactor
+                        print("rejection prob per test: " + str(rej))
+                        m=int(np.ceil(np.log(1/d)/np.log(1/(1-rej))))
 
                     print("delta: " + str(d)+ ", epsilon: " + str(e) + ", m: " + str(m))
                     
