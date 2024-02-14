@@ -44,67 +44,56 @@ python train.py --baseline --batches 5276
 
 END
 
+for n in 1 2 3 4 5 6 7 8 9 10;
+do
+python preprocess.py --model_name "robust_combine_three" -D empirical --edge --output_folder $n
+python preprocess.py --model_name "robust_combine_three" -D centered --edge --output_folder $n
+python preprocess.py --model_name "robust_combine_three" -D uniform --edge --output_folder $n
+python preprocess.py --model_name "robust_combine_three" -D uniform --output_folder $n
 
-python preprocess.py --model_name "robust_combine_three" -D empirical --edge
-python preprocess.py --model_name "robust_combine_three" -D centered --edge
-python preprocess.py --model_name "robust_combine_three" -D uniform --edge
-python preprocess.py --model_name "robust_combine_three" -D uniform
+python preprocess.py --model_name "robust_monotonic" -D empirical --edge --output_folder $n
+python preprocess.py --model_name "robust_monotonic" -D uniform --edge --output_folder $n
+python preprocess.py --model_name "robust_monotonic" -D centered --edge --output_folder $n
+python preprocess.py --model_name "robust_monotonic" -D uniform  --output_folder $n
 
-python preprocess.py --model_name "robust_monotonic" -D empirical --edge
-python preprocess.py --model_name "robust_monotonic" -D uniform --edge
-python preprocess.py --model_name "robust_monotonic" -D centered --edge
-python preprocess.py --model_name "robust_monotonic" -D uniform 
+python preprocess.py --model_name "monotonic" -D empirical --edge --output_folder $n
+python preprocess.py --model_name "monotonic" -D uniform --edge --output_folder $n
+python preprocess.py --model_name "monotonic" -D centered --edge --output_folder $n
+python preprocess.py --model_name "monotonic" -D uniform --output_folder $n
 
-python preprocess.py --model_name "monotonic" -D empirical --edge
-python preprocess.py --model_name "monotonic" -D uniform --edge
-python preprocess.py --model_name "monotonic" -D centered --edge
-python preprocess.py --model_name "monotonic" -D uniform 
-
-python preprocess.py --model_name "train_adv_combine" -D empirical --edge
-python preprocess.py --model_name "train_adv_combine" -D uniform --edge
-python preprocess.py --model_name "train_adv_combine" -D centered --edge
+python preprocess.py --model_name "train_adv_combine" -D empirical --edge --output_folder $n
+python preprocess.py --model_name "train_adv_combine" -D uniform --edge --output_folder $n
+python preprocess.py --model_name "train_adv_combine" -D centered --edge --output_folder $n
 python preprocess.py --model_name "train_adv_combine" -D uniform 
 
-python preprocess.py --model_name "robust_combine_two" -D empirical --edge
-python preprocess.py --model_name "robust_combine_two" -D uniform --edge
-python preprocess.py --model_name "robust_combine_two" -D centered --edge
-python preprocess.py --model_name "robust_combine_two" -D uniform
+python preprocess.py --model_name "robust_combine_two" -D empirical --edge --output_folder $n
+python preprocess.py --model_name "robust_combine_two" -D uniform --edge --output_folder $n
+python preprocess.py --model_name "robust_combine_two" -D centered --edge --output_folder $n
+python preprocess.py --model_name "robust_combine_two" -D uniform --output_folder $n
 
-python preprocess.py --model_name "baseline" -D empirical --edge
-python preprocess.py --model_name "baseline" -D uniform --edge
-python preprocess.py --model_name "baseline" -D centered --edge
-python preprocess.py --model_name "baseline" -D uniform
+python preprocess.py --model_name "baseline" -D empirical --edge --output_folder $n
+python preprocess.py --model_name "baseline" -D uniform --edge --output_folder $n
+python preprocess.py --model_name "baseline" -D centered --edge --output_folder $n
+python preprocess.py --model_name "baseline" -D uniform --output_folder $n
 
-python preprocess.py --model_name "robust_combine_three" -D empirical --edge --train_only
-python preprocess.py --model_name "robust_combine_three" -D uniform --edge --train_only
-python preprocess.py --model_name "robust_combine_three" -D centered --edge --train_only
-python preprocess.py --model_name "robust_combine_three" -D uniform --train_only
+python preprocess.py --model_name "robust_combine_three" -D empirical --edge --train_only --output_folder $n
+python preprocess.py --model_name "robust_combine_three" -D centered --edge --train_only --output_folder $n
 
-python preprocess.py --model_name "robust_monotonic" -D empirical --edge --train_only
-python preprocess.py --model_name "robust_monotonic" -D uniform --edge --train_only
-python preprocess.py --model_name "robust_monotonic" -D centered --edge --train_only
-python preprocess.py --model_name "robust_monotonic" -D uniform --train_only
+python preprocess.py --model_name "robust_monotonic" -D empirical --edge --train_only --output_folder $n
+python preprocess.py --model_name "robust_monotonic" -D centered --edge --train_only --output_folder $n
 
-python preprocess.py --model_name "monotonic" -D empirical --edge --train_only
-python preprocess.py --model_name "monotonic" -D uniform --edge --train_only
-python preprocess.py --model_name "monotonic" -D centered --edge --train_only
-python preprocess.py --model_name "monotonic" -D uniform --train_only
+python preprocess.py --model_name "monotonic" -D empirical --edge --train_only --output_folder $n
+python preprocess.py --model_name "monotonic" -D centered --edge --train_only --output_folder $n
 
-python preprocess.py --model_name "train_adv_combine" -D empirical --edge --train_only
-python preprocess.py --model_name "train_adv_combine" -D uniform --edge --train_only
-python preprocess.py --model_name "train_adv_combine" -D centered --edge --train_only
-python preprocess.py --model_name "train_adv_combine" -D uniform --train_only
+python preprocess.py --model_name "train_adv_combine" -D empirical --edge --train_only --output_folder $n
+python preprocess.py --model_name "train_adv_combine" -D centered --edge --train_only --output_folder $n
 
-python preprocess.py --model_name "robust_combine_two" -D empirical --edge --train_only
-python preprocess.py --model_name "robust_combine_two" -D uniform --edge --train_only
-python preprocess.py --model_name "robust_combine_two" -D centered --edge --train_only
-python preprocess.py --model_name "robust_combine_two" -D uniform --train_only
+python preprocess.py --model_name "robust_combine_two" -D empirical --edge --train_only --output_folder $n
+python preprocess.py --model_name "robust_combine_two" -D centered --edge --train_only --output_folder $n
 
-python preprocess.py --model_name "baseline" -D empirical --edge --train_only
-python preprocess.py --model_name "baseline" -D uniform --edge --train_only
-python preprocess.py --model_name "baseline" -D centered --edge --train_only
-python preprocess.py --model_name "baseline" -D uniform --train_only
-
+python preprocess.py --model_name "baseline" -D empirical --edge --train_only --output_folder $n
+python preprocess.py --model_name "baseline" -D centered --edge --train_only --output_folder $n
+done
 #Rscript -e 'install.packages(c("data.table","huxtable"), repos="https://cloud.r-project.org",lib="~/R/x86_64-redhat-linux-gnu-library/3.6")'
 #Rscript  paper_plots.R
 

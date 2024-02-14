@@ -143,6 +143,7 @@ with strat.scope():
             return xNew
 
         def testBatch(x,xgb_mod=None,cap=None,centered=True,path=False,all_neighbors=False):
+
             print("testing batch of size " + str(cap))
             if not cap:
                 cap=len(x_test)
@@ -157,6 +158,7 @@ with strat.scope():
             xNew = x[:cap]
             x=x[cap:]
             if not centered:
+                print("num pairs remaining for empirical strategy: " + str(len(p)))
                 # print("y_p up top: " + str(y_p))
                 num_total = math.comb(len(x),2)
                 reachedCap = False
@@ -334,6 +336,7 @@ with strat.scope():
                 if D=="empirical":
                     
                     success = testBatch(x_test,cap=rollingM,xgb_mod=xgb_model,centered=False,path =path)
+
   
                     print("success with empirical test: "+str(success))
                 else:
