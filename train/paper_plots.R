@@ -37,21 +37,25 @@ verbose_names = c("Monotonic XgBoost Model",
                   "Verifiably Robust (A+B+E)",
                   "Adversarially Trained (A+B)",
                   "Baseline Neural Network")
-edgeOptions=c("_edge")
 trainOptions = c("_train","")
-distOptions = c("_uniform","_centered","_empirical")
-grid = expand.grid(distOptions,edgeOptions,trainOptions,model_names)
-grid$filename = paste0(grid$Var4,grid$Var1,grid$Var2,grid$Var3)
+distOptions = c("_uniform_edge","_uniform","_centered_edge","_empirical_edge")
+grid = expand.grid(distOptions,trainOptions,model_names)
+grid$filename = paste0(grid$Var3,grid$Var1,grid$Var2)
 grid$filepath =paste0("~/code/pdfclassifier/train/tests/",grid$filename,".csv")
-grid$pathString = ifelse(grid$Var2=="_edge","Edge Test, ","Path Test, ")
-grid$trainString = ifelse(grid$Var3=="_train"," (Train)"," (Test)")
-
+grid$trainString = ifelse(grid$Var2=="_train"," (Train)"," (Test)")
+grid[grid$Var1=="_uniform_edge" | grid$Var1=="_uniform",]$trainString = ""
+gridTest = grid[grid$Var2 == "",]
+gridTrain = grid[grid$Var2 == "_train",]
+gridTrain = gridTrain[gridTrain$Var1!="_uniform_edge" & gridTrain$Var1!="_uniform",]
+grid = rbind(gridTest,gridTrain)
 grid$distString = ""
-grid[grid$Var1=="_uniform",]$distString = "Uniform Distribution"
-grid[grid$Var1=="_centered",]$distString = "Centered Distribution"
-grid[grid$Var1=="_empirical",]$distString = "Empirical Distribution"
+grid[grid$Var1=="_uniform_edge",]$distString = "Edge on Hypercube"
+grid[grid$Var1=="_uniform",]$distString = "Path on Hypercube"
+
+grid[grid$Var1=="_centered_edge",]$distString = "Mutation"
+grid[grid$Var1=="_empirical_edge",]$distString = "Empirical"
 vb = data.table(model_name=model_names,verbose_name=(verbose_names))
-grid = merge(grid,vb,by.x ="Var4",by.y= "model_name")
+grid = merge(grid,vb,by.x ="Var3",by.y= "model_name")
 grid$caption = paste0(grid$verbose_name,": ",grid$pathString,grid$distString,grid$trainString)
 filenames = grid$filename
 filepaths = grid$filepath
@@ -126,3 +130,4 @@ for (i in 1:length(filenames)){
   capture.output(print_latex(ht,tabular_only = F), file = '~/code/pdfclassifier/train/table.tex',append=TRUE)
   #heatmap.2(M,Rowv=FALSE, Colv=FALSE,na.color = "gray",dendrogram='none', "Adversarially Retrained Model Monotonicity")
 }
+
