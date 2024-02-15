@@ -43,9 +43,10 @@ echo "Training Baseline NN Model..."
 python train.py --baseline --batches 5276
 
 END
-
-for n in 1 2 3 4 5 6 7 8 9 10;
+arr=(1 2 3 4 5 6 7 8 9 10)
+for n in ${arr[@]};
 do
+mkdir tests/$n
 python preprocess.py --model_name "robust_combine_three" -D empirical --edge --output_folder $n
 python preprocess.py --model_name "robust_combine_three" -D centered --edge --output_folder $n
 python preprocess.py --model_name "robust_combine_three" -D uniform --edge --output_folder $n

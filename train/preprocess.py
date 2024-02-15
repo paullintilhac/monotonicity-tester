@@ -143,67 +143,76 @@ with strat.scope():
             return xNew
 
         def testBatch(x,xgb_mod=None,cap=None,centered=True,path=False,all_neighbors=False):
-
-            print("testing batch of size " + str(cap))
+            
+            print("testing batch of size " + str(cap) + " out of " + str(len(x)) +" remaining samples")
             if not cap:
                 cap=len(x_test)
             if not sess and not xgb_mod:
                 print("NEED EITHER THE MONOTONIC MODEL OR NN")
                 return   
-            xNew = []
+            
             x_mutated = []
             y_mutated = []
             # for the empirical strategy, which selects existing neighbors 
             # from our valid set (usually test data)
-            xNew = x[:cap]
-            x=x[cap:]
-            if not centered:
-                print("num pairs remaining for empirical strategy: " + str(len(p)))
-                # print("y_p up top: " + str(y_p))
-                num_total = math.comb(len(x),2)
-                reachedCap = False
-                newMaxM = sorted_by_m[-1][2]
             
-                count=0
-                for i in tqdm(range(len(x_test)), desc="Finding pairs on " +str(len(x_test))+" subset of empirical distribution"):
-                    x1 = x_test[i]
+            if not centered:
+                # print("y_p up top: " + str(y_p))\
+                xNew = []
+                xCopy = x.copy()[:cap]
+                x=x[cap:]
+            
+                for i in tqdm(range(len(xCopy)), desc="Finding pairs on " +str(len(xCopy))+" subset of empirical distribution"):
+                    x1 = xCopy[i]
+                    thisX = []
+                    thisXMutated = []
                     for j in range(i):
-                        x2 = x_test[j]
+                        x2 = xCopy[j]
                         #if using edge test, search for comparable neighboring points
                         diffVec = x1-x2
                         maxDiff = np.max(diffVec)
                         minDiff = np.min(diffVec)
                         if ((maxDiff>0 and minDiff==0) or (maxDiff==0 and minDiff<0)):
-                            count+=1
                             x1 = x1.astype(bool)
                             x2 = x2.astype(bool)
-                            xNew.append(x1.astype(int))
-                            x_mutated.append(x2.astype(int))
-                    if count>newMaxM:
-                        break
+                            thisX.append(x1.astype(int))
+                            thisXMutated.append(x2.astype(int))
+                    if len(thisX)==0:
+                        continue
+                    if xgb_mod:
+                        dtest = xgb.DMatrix(thisX)
+                        preds = xgb_model.predict(dtest)
+                        thisY = [1 if p > 0.5 else 0 for p in preds]
+                        dmutated = xgb.DMatrix(thisXMutated)
+                        mutated_preds = xgb_mod.predict(dmutated)
+                        thisYMutated = [1 if p > 0.5 else 0 for p in mutated_preds]
+                    else:
+                        thisY = sess.run(model.y_pred,\
+                                feed_dict={model.x_input:thisX
+                        })
+                        thisYMutated = sess.run(model.y_pred,\
+                                feed_dict={model.x_input:thisXMutated
+                        })
+                    for i in range(len(thisX)):
+                        sum_orig = str(np.sum(thisX[i]))
+                        orig_pred = str(thisY[i])
+                        sum_orig = str(np.sum(thisX[i]))
+                        sum_mutated = str(np.sum(thisXMutated[i]))
+                        mutated_pred = str(thisYMutated[i])
+                        #print("sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
+
+                        if (sum_mutated>sum_orig and mutated_pred<orig_pred) or (sum_mutated<sum_orig and mutated_pred>orig_pred):
+                            print("HIT TEST FAILURE ON ROW (one neighbor) " + str(i)+", sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
+                            return "Reject"
 
 
-                print("len xNew: " + str(len(xNew)))
-                if xgb_mod:
-                    dtest = xgb.DMatrix(xNew)
-                    preds = xgb_model.predict(dtest)
-                    y = [1 if p > 0.5 else 0 for p in preds]
-                    dmutated = xgb.DMatrix(x_mutated)
-                    mutated_preds = xgb_mod.predict(dmutated)
-                    y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
-                else:
-                    y = sess.run(model.y_pred,\
-                            feed_dict={model.x_input:xNew
-                    })
-                    y_mutated = sess.run(model.y_pred,\
-                            feed_dict={model.x_input:x_mutated.copy()
-                    })
+               
             
             # this code block for the uniform and centered-in strategy, which both use "mutations"
             else:
                 print("cap: " + str(cap) + ", len(x): " + str(len(x)))
-                
-                    
+                xNew = x[:cap]
+                x=x[cap:]
                 if xgb_mod:
                     dtest = xgb.DMatrix(xNew)
                     preds = xgb_model.predict(dtest)
@@ -227,44 +236,46 @@ with strat.scope():
                     })
             print("finished compiling mutations")
             maxRows = 0
-            for i in range(len(x_mutated)):
-                sum_orig = str(np.sum(xNew[i]))
-                orig_pred = str(y[i])
-
-                #print("sum xNew: " + str(sum(xNew[i])) + ", sum x_mutated: " + str(sum(x_mutated[i])))
-                if all_neighbors:
-                    for j in range(len(xNew[i])):
-                        xCopy = xNew[i].copy()
-                        xCopy[j]=1-xCopy[j]
-                        sum_mutated = str(np.sum(xCopy))
-                        if xgb_mod: 
-                            dmutated = xgb.DMatrix([xCopy])
-                            mutated_preds = xgb_mod.predict(dmutated)
-                            y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
-                        else:
-                            y_mutated = sess.run(model.y_pred,\
-                                feed_dict={model.x_input:[xCopy]
-                            })
-                        mutated_pred = str(y_mutated[0])
-                        if (sum_mutated>sum_orig and mutated_pred<orig_pred) or (sum_mutated<sum_orig and mutated_pred>orig_pred):
-                            print("HIT TEST FAILURE ON ROW (all neighbors) " + str(i)+", sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
-                            return "Reject"
-                else:
-
+            if centered:
+                for i in range(len(x_mutated)):
                     sum_orig = str(np.sum(xNew[i]))
-                    sum_mutated = str(np.sum(x_mutated[i]))
-                    mutated_pred = str(y_mutated[i])
                     orig_pred = str(y[i])
-                    #print("sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
 
-                    if (sum_mutated>sum_orig and mutated_pred<orig_pred) or (sum_mutated<sum_orig and mutated_pred>orig_pred):
-                        print("HIT TEST FAILURE ON ROW (one neighbor) " + str(i)+", sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
-                        return "Reject"
+                    #print("sum xNew: " + str(sum(xNew[i])) + ", sum x_mutated: " + str(sum(x_mutated[i])))
+                    if all_neighbors:
+                        for j in range(len(xNew[i])):
+                            xCopy = xNew[i].copy()
+                            xCopy[j]=1-xCopy[j]
+                            sum_mutated = str(np.sum(xCopy))
+                            if xgb_mod: 
+                                dmutated = xgb.DMatrix([xCopy])
+                                mutated_preds = xgb_mod.predict(dmutated)
+                                y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
+                            else:
+                                y_mutated = sess.run(model.y_pred,\
+                                    feed_dict={model.x_input:[xCopy]
+                                })
+                            mutated_pred = str(y_mutated[0])
+                            if (sum_mutated>sum_orig and mutated_pred<orig_pred) or (sum_mutated<sum_orig and mutated_pred>orig_pred):
+                                print("HIT TEST FAILURE ON ROW (all neighbors) " + str(i)+", sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
+                                return "Reject"
+                    else:
+
+                        sum_orig = str(np.sum(xNew[i]))
+                        sum_mutated = str(np.sum(x_mutated[i]))
+                        mutated_pred = str(y_mutated[i])
+                        orig_pred = str(y[i])
+                        #print("sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
+
+                        if (sum_mutated>sum_orig and mutated_pred<orig_pred) or (sum_mutated<sum_orig and mutated_pred>orig_pred):
+                            print("HIT TEST FAILURE ON ROW (one neighbor) " + str(i)+", sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
+                            return "Reject"
             return "Accept"
         pathString = "" if path else "_edge"
         trainString = "_train" if train_only else ""
 
-        
+        filepath = "tests/"+output_folder+"/"+filename+"_"+D+pathString+trainString+'.csv'
+        print("filepath: " + str(filepath))
         with open("tests/"+output_folder+"/"+filename+"_"+D+pathString+trainString+'.csv', 'w', newline='') as file:
             writer = csv.writer(file)
             writer.writerow(["epsilon", "delta","success"])
@@ -295,33 +306,20 @@ with strat.scope():
                     edTups.append((e,d,m))
             sorted_by_m = sorted(edTups, key=lambda tup: tup[2])
             print("sorted_by_m: "+str(sorted_by_m))
-
-            lastM=0
-            lastSuccess=True
-            rollingM = 0
             
             for e,d,m in sorted_by_m:
                 print("delta: " + str(d)+ ", epsilon: " + str(e)+", m: "+str(m))
-                mCopy = m
+                
                 #our eps, delta pairs are sorted by increasing m,so to continue rolling test we test only diff M
-                m-=lastM
-                rollingM += m
-                print("rollingM: " + str(rollingM) + "m delta: " + str(m))
-                if m==0 and D=="centered" or D=="uniform":
-                    success = "Reject" if not lastSuccess else "Accept"
-                    writer.writerow([e, d,success])
-                    continue
+                
                 np.random.shuffle(x_test) 
 
-                if D=="centered":
-                    print("using mutation strategy -- assuming density of " + str(gamma))
-                    print("contribution to rejection probability from non-iso region per POT: " + str(nonIsoFactor))
-                    print("contribution to rejection probability from isolated region per POT: " + str(max(e - gamma,0)))
-                    if m>n_obs:
-                        print("sparsity greater than eps, setting success to N/A")
-                        success = "Reject" if not lastSuccess else "N/A"
-                        writer.writerow([e, d,success])
-                        continue
+                if (D=="centered" and m>n_obs) or ( D=="empirical" and m>n_obs):
+                    print("not enough observations to conduct test -- setting result to N/A")
+                    success = "N/A"
+                    writer.writerow([e, d,success])
+                    continue
+                
                         
                 success="Accept"
                 if m>maxM:
@@ -335,12 +333,11 @@ with strat.scope():
                     # print("maxM: " + str(maxM) + ", len(x_test): " + str(len(x_test)) + ", numRounds: " + str(numRounds) + ", remainder: " + str(remainderRound)) 
                 if D=="empirical":
                     
-                    success = testBatch(x_test,cap=rollingM,xgb_mod=xgb_model,centered=False,path =path)
+                    success = testBatch(x_test,cap=m,xgb_mod=xgb_model,centered=False,path =path)
 
   
                     print("success with empirical test: "+str(success))
                 else:
-                    print("lastSucess: "+str(lastSuccess))
                     maxRounds = 0
                     
                     for r in tqdm(range(numRounds),desc = "Generating mutations and evaluating in batches of size " + str(len(x_test))):
@@ -350,7 +347,7 @@ with strat.scope():
                         elif D=="uniform":
                             x_input = [np.random.randint(2,size=n_features) for _ in range(len(x_test))]      
                                             
-                        if not lastSuccess or testBatch(x_input,xgb_mod = xgb_model,path=path,all_neighbors=all_neighbors) == "Reject":
+                        if testBatch(x_input,xgb_mod = xgb_model,path=path,all_neighbors=all_neighbors) == "Reject":
                             print("encountered rejection")
                             success="Reject"
                             maxRounds = r
@@ -364,10 +361,9 @@ with strat.scope():
                     elif D=="uniform":
                         x_input = [np.random.randint(2,size=n_features) for _ in range(len(x_test))]
                     print("rounds completed: " + str(maxRounds) + " out of " + str(numRounds))
-                    if not lastSuccess or testBatch(x_input,xgb_mod = xgb_model,cap = remainderRound,path=path,all_neighbors=all_neighbors ) == "Reject":
+                    if testBatch(x_input,xgb_mod = xgb_model,cap = remainderRound,path=path,all_neighbors=all_neighbors ) == "Reject":
                         success="Reject"
                         print("encountered rejection in remainder")
-
+                print("writing to file " + str(filepath))
                 writer.writerow([e, d,success])
-                lastSuccess = True if success=="Accept" else False
-                lastM=mCopy
+                

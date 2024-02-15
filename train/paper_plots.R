@@ -25,6 +25,7 @@ df2$ratio = 1/df2$thresh
 head(df2[df2$thresh>0,])
 }
 
+fileprefix = "~/code/pdfclassifier/train/tests/"
 model_names = c("monotonic",
                 "robust_monotonic",
                 "robust_combine_two",
@@ -41,7 +42,6 @@ trainOptions = c("_train","")
 distOptions = c("_uniform_edge","_uniform","_centered_edge","_empirical_edge")
 grid = expand.grid(distOptions,trainOptions,model_names)
 grid$filename = paste0(grid$Var3,grid$Var1,grid$Var2)
-grid$filepath =paste0("~/code/pdfclassifier/train/tests/",grid$filename,".csv")
 grid$trainString = ifelse(grid$Var2=="_train"," (Train)"," (Test)")
 grid[grid$Var1=="_uniform_edge" | grid$Var1=="_uniform",]$trainString = ""
 gridTest = grid[grid$Var2 == "",]
@@ -59,6 +59,7 @@ grid = merge(grid,vb,by.x ="Var3",by.y= "model_name")
 grid$caption = paste0(grid$verbose_name,": ",grid$pathString,grid$distString,grid$trainString)
 filenames = grid$filename
 filepaths = grid$filepath
+fileprefixes = grid$fileprefix
 captions = grid$caption
 
 for (i in 1:length(filenames)){
@@ -66,10 +67,21 @@ for (i in 1:length(filenames)){
 }
 
 for (i in 1:length(filenames)){
-  file=filepaths[i]
+  
+  file=filenames[i]
   caption = captions[i]
   print(caption)
-  dat = read.csv(file)
+  dat = read.csv(paste0(fileprefix,"1/",file,".csv"))
+  
+  for (j in 2:10){
+    tmp_dat = read.csv(paste0(fileprefix,as.character(j),"/",file,".csv"))
+    for (k in nrow(tmp_dat)){
+      if (tmp_dat[k,"success"]=="Accept"){
+        dat[k,"success"]="Accept"
+      }
+    }
+  }
+  
   eps = unique(dat$epsilon)
   delta = unique(dat$delta)
   n_e = length(eps)
