@@ -144,7 +144,6 @@ with strat.scope():
 
         def testBatch(x,xgb_mod=None,cap=None,centered=True,path=False,all_neighbors=False):
             
-            print("testing batch of size " + str(cap) + " out of " + str(len(x)) +" remaining samples")
             if not cap:
                 cap=len(x_test)
             if not sess and not xgb_mod:
@@ -160,8 +159,7 @@ with strat.scope():
                 # print("y_p up top: " + str(y_p))\
                 xNew = []
                 xCopy = x.copy()[:cap]
-                x=x[cap:]
-            
+
                 for i in tqdm(range(len(xCopy)), desc="Finding pairs on " +str(len(xCopy))+" subset of empirical distribution"):
                     x1 = xCopy[i]
                     thisX = []
@@ -204,15 +202,12 @@ with strat.scope():
                         if (sum_mutated>sum_orig and mutated_pred<orig_pred) or (sum_mutated<sum_orig and mutated_pred>orig_pred):
                             print("HIT TEST FAILURE ON ROW (one neighbor) " + str(i)+", sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
                             return "Reject"
-
-
                
             
             # this code block for the uniform and centered-in strategy, which both use "mutations"
             else:
-                print("cap: " + str(cap) + ", len(x): " + str(len(x)))
                 xNew = x[:cap]
-                x=x[cap:]
+                
                 if xgb_mod:
                     dtest = xgb.DMatrix(xNew)
                     preds = xgb_model.predict(dtest)
@@ -225,7 +220,6 @@ with strat.scope():
                 for i in range(len(xNew)):
                     x_mutated.append(mutate(xNew[i],y[i],k=1,path=path))
                     #print("sum xNew: " + str(sum(xNew[i])) + ", sum x_mutated: " + str(sum(x_mutated[i])))
-                print("len(x_mutated): " + str(len(x_mutated)) + ", len(xNew): "  + str(len(xNew)))
                 if xgb_mod: 
                     dmutated = xgb.DMatrix(x_mutated)
                     mutated_preds = xgb_mod.predict(dmutated)
@@ -234,8 +228,6 @@ with strat.scope():
                     y_mutated = sess.run(model.y_pred,\
                             feed_dict={model.x_input:x_mutated.copy()
                     })
-            print("finished compiling mutations")
-            maxRows = 0
             if centered:
                 for i in range(len(x_mutated)):
                     sum_orig = str(np.sum(xNew[i]))
@@ -341,7 +333,6 @@ with strat.scope():
                     maxRounds = 0
                     
                     for r in tqdm(range(numRounds),desc = "Generating mutations and evaluating in batches of size " + str(len(x_test))):
-                        print("progress: " + str(float(r)/float(numRounds)))
                         if D=="centered":
                             x_input = x_test
                         elif D=="uniform":

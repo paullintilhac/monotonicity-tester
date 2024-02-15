@@ -65,7 +65,7 @@ captions = grid$caption
 for (i in 1:length(filenames)){
   print(captions[i])
 }
-
+L=1
 for (i in 1:length(filenames)){
   
   file=filenames[i]
@@ -73,13 +73,15 @@ for (i in 1:length(filenames)){
   print(caption)
   dat = read.csv(paste0(fileprefix,"1/",file,".csv"))
   
-  for (j in 2:10){
+  if (L>1){
+  for (j in 2:L){
     tmp_dat = read.csv(paste0(fileprefix,as.character(j),"/",file,".csv"))
     for (k in nrow(tmp_dat)){
       if (tmp_dat[k,"success"]=="Accept"){
         dat[k,"success"]="Accept"
       }
     }
+  }
   }
   
   eps = unique(dat$epsilon)
