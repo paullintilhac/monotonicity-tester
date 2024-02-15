@@ -155,55 +155,60 @@ with strat.scope():
             y_mutated = []
             # for the empirical strategy, which selects existing neighbors 
             # from our valid set (usually test data)
-            xNew = x[:cap]
-            x=x[cap:]
-            if not centered:
-                print("num pairs remaining for empirical strategy: " + str(len(p)))
-                # print("y_p up top: " + str(y_p))
-                num_total = math.comb(len(x),2)
-                reachedCap = False
-                newMaxM = sorted_by_m[-1][2]
             
-                count=0
-                for i in tqdm(range(len(x_test)), desc="Finding pairs on " +str(len(x_test))+" subset of empirical distribution"):
-                    x1 = x_test[i]
+            if not centered:
+                xNew = x[:cap]
+                xCopy = x.copy()[:cap]
+                print("size of xCopy: " + str(len(xCopy)))
+                for i in tqdm(range(len(xCopy)), desc="Finding pairs on " +str(len(xCopy))+" subset of empirical distribution"):
+                    x1 = xCopy[i]
+                    thisX=[]
+                    thisXMutated=[]
                     for j in range(i):
-                        x2 = x_test[j]
+                        x2 = xCopy[j]
                         #if using edge test, search for comparable neighboring points
                         diffVec = x1-x2
                         maxDiff = np.max(diffVec)
                         minDiff = np.min(diffVec)
+                        
                         if ((maxDiff>0 and minDiff==0) or (maxDiff==0 and minDiff<0)):
-                            count+=1
                             x1 = x1.astype(bool)
                             x2 = x2.astype(bool)
-                            xNew.append(x1.astype(int))
-                            x_mutated.append(x2.astype(int))
-                    if count>newMaxM:
-                        break
+                            thisX.append(x1.astype(int))
+                            thisXMutated.append(x2.astype(int))
 
+                    if len(thisX)==0:
+                        continue
+                    if xgb_mod:
+                        dtest = xgb.DMatrix(thisX)
+                        preds = xgb_model.predict(dtest)
+                        thisY = [1 if p > 0.5 else 0 for p in preds]
+                        dmutated = xgb.DMatrix(thisXMutated)
+                        mutated_preds = xgb_mod.predict(dmutated)
+                        thisYMutated = [1 if p > 0.5 else 0 for p in mutated_preds]
+                    else:
+                        thisY = sess.run(model.y_pred,\
+                                feed_dict={model.x_input:thisX
+                        })
+                        thisYMutated = sess.run(model.y_pred,\
+                                feed_dict={model.x_input:thisXMutated.copy()
+                        })
+                    for i in range(len(thisX)):
+                        sum_orig = str(np.sum(thisX[i]))
+                        orig_pred = str(thisY[i])
+                        sum_orig = str(np.sum(thisX[i]))
+                        sum_mutated = str(np.sum(thisXMutated[i]))
+                        mutated_pred = str(thisYMutated[i])
+                        #print("sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
 
-                print("len xNew: " + str(len(xNew)))
-                if xgb_mod:
-                    dtest = xgb.DMatrix(xNew)
-                    preds = xgb_model.predict(dtest)
-                    y = [1 if p > 0.5 else 0 for p in preds]
-                    dmutated = xgb.DMatrix(x_mutated)
-                    mutated_preds = xgb_mod.predict(dmutated)
-                    y_mutated = [1 if p > 0.5 else 0 for p in mutated_preds]
-                else:
-                    y = sess.run(model.y_pred,\
-                            feed_dict={model.x_input:xNew
-                    })
-                    y_mutated = sess.run(model.y_pred,\
-                            feed_dict={model.x_input:x_mutated.copy()
-                    })
-            
+                        if (sum_mutated>sum_orig and mutated_pred<orig_pred) or (sum_mutated<sum_orig and mutated_pred>orig_pred):
+                            print("HIT TEST FAILURE ON ROW (one neighbor) " + str(i)+", sum_orig: " + str(sum_orig)+ ", sum_mutated: " + str(sum_mutated) + ", mutated_pred: " + str(mutated_pred) + ". orig_pred: " + str(orig_pred))
+                            return "Reject"
             # this code block for the uniform and centered-in strategy, which both use "mutations"
             else:
-                print("cap: " + str(cap) + ", len(x): " + str(len(x)))
                 
-                    
+                xNew = x[:cap]
+
                 if xgb_mod:
                     dtest = xgb.DMatrix(xNew)
                     preds = xgb_model.predict(dtest)
